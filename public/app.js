@@ -12,8 +12,6 @@ const precedentList = $("#precedentList");
 const controls = {
   generate: $("#generateBtn"),
   template: $("#templateBtn"),
-  copy: $("#copyBtn"),
-  clear: $("#clearBtn"),
   save: $("#saveDraftBtn"),
   load: $("#loadDraftBtn"),
   kakaoShare: $("#kakaoShareBtn"),
@@ -54,19 +52,14 @@ async function init() {
   const restored = restoreAutoSavedState();
   renderCaseTypes();
   renderQuestions(restored?.checkedQuestions || []);
-  renderDraft(restored?.draftText || localDraft(), {
-    missingInfo: restored ? findMissingInfo(getPayload()) : ["사건 설명을 입력하면 누락 항목을 확인합니다."],
+  renderDraft(restored?.draftText || localDraft(), restored ? localMeta() : {
+    missingInfo: ["기본정보를 입력하면 고소장 양식에 바로 반영됩니다."],
     precedentQueries: buildPrecedentQueries(getSelectedType()),
   });
+  statusText.textContent = "기본정보를 입력하면 고소장이 자동으로 채워집니다.";
 
   controls.generate.addEventListener("click", generateAiDraft);
-  controls.template.addEventListener("click", () => {
-    renderDraft(localDraft(), localMeta());
-    statusText.textContent = "템플릿 초안을 생성했습니다.";
-    autoSave();
-  });
-  controls.copy?.addEventListener("click", copyDraft);
-  controls.clear?.addEventListener("click", clearForm);
+  controls.template?.addEventListener("click", syncDraftFromInputs);
   controls.save.addEventListener("click", saveDraft);
   controls.load.addEventListener("click", loadDraft);
   controls.kakaoShare.addEventListener("click", shareToKakao);
@@ -75,11 +68,23 @@ async function init() {
   controls.txt.addEventListener("click", downloadTxt);
   controls.print.addEventListener("click", () => window.print());
   form.addEventListener("input", () => {
-    renderLiveChecks();
+    syncDraftFromInputs();
     autoSave();
   });
-  questions.addEventListener("change", autoSave);
+  form.addEventListener("change", () => {
+    syncDraftFromInputs();
+    autoSave();
+  });
+  questions.addEventListener("change", () => {
+    syncDraftFromInputs();
+    autoSave();
+  });
   editor.addEventListener("input", autoSave);
+}
+
+function syncDraftFromInputs() {
+  renderDraft(localDraft(), localMeta());
+  statusText.textContent = "입력한 내용이 고소장 양식에 반영됐습니다.";
 }
 
 function renderCaseTypes() {
@@ -94,7 +99,7 @@ function renderCaseTypes() {
       selectedCaseType = item.id;
       renderCaseTypes();
       renderQuestions();
-      renderLiveChecks();
+      syncDraftFromInputs();
       autoSave();
     });
     grid.append(button);
@@ -126,7 +131,7 @@ async function generateAiDraft() {
   }
 
   setLoading(true);
-  statusText.textContent = "AI가 사실관계와 고소장 구조를 정리하는 중입니다.";
+  statusText.textContent = "AI가 실제 고소장 양식에 맞춰 정리하는 중입니다.";
 
   try {
     const response = await fetch("/api/draft", {
@@ -139,11 +144,11 @@ async function generateAiDraft() {
     renderDraft(result.draftText, result);
     autoSave();
     statusText.textContent = result.usedAi
-      ? "AI 초안을 생성했습니다. 제출 전 반드시 사실관계를 직접 확인하세요."
-      : "API 키가 없어 템플릿 초안을 생성했습니다.";
+      ? "AI 초안을 실제 고소장 양식으로 생성했습니다. 제출 전 사실관계를 확인하세요."
+      : "템플릿 고소장 양식으로 생성했습니다.";
   } catch (error) {
     renderDraft(localDraft(), localMeta());
-    statusText.textContent = `${error.message} 템플릿 초안으로 대체했습니다.`;
+    statusText.textContent = `${error.message} 기본 양식으로 대체했습니다.`;
   } finally {
     setLoading(false);
   }
@@ -177,16 +182,28 @@ function localDraft() {
   return [
     "고 소 장",
     "",
-    "1. 고소인",
-    data.complainant || "[고소인 성명, 주소, 연락처 기재]",
+    "1. 고소인*",
+    `성명: ${data.complainant || "[고소인 성명]"}`,
+    "주민등록번호: [주민등록번호]",
+    "주소: [주소]",
+    "직업: [직업]",
+    "전화: [휴대폰 / 자택 / 사무실]",
+    "이메일: [이메일]",
+    "대리인에 의한 고소: □ 해당 없음  □ 법정대리인  □ 고소대리인",
     "",
-    "2. 피고소인",
-    data.accused || "[피고소인 성명, 주소, 연락처 또는 성명불상 기재]",
+    "2. 피고소인*",
+    `성명: ${data.accused || "[피고소인 성명 또는 성명불상]"}`,
+    "주민등록번호: [알고 있는 경우 기재]",
+    "주소: [주소 또는 알 수 없는 사유]",
+    "직업: [직업]",
+    "전화: [연락처]",
+    "이메일: [이메일]",
+    "기타사항: [고소인과의 관계, 인상착의, 계정명 등]",
     "",
-    "3. 고소취지",
+    "3. 고소취지*",
     `고소인은 피고소인을 ${data.caseTypeName || "관련 범죄"} 혐의로 고소하오니, 철저히 수사하여 법에 따라 처벌하여 주시기 바랍니다.`,
     "",
-    "4. 범죄사실",
+    "4. 범죄사실*",
     `가. 사건 일시: ${data.incidentDate || "[일시 기재]"}`,
     `나. 사건 장소: ${data.incidentPlace || "[장소 기재]"}`,
     `다. 피해 내용: ${data.damage || "[피해금액 또는 피해내용 기재]"}`,
@@ -199,19 +216,39 @@ function localDraft() {
     `위 사실관계는 ${data.caseTypeName || "형사사건"} 쟁점과 관련될 수 있으므로, 고소인은 수사기관의 판단을 구하고자 본 고소장을 제출합니다.`,
     "",
     "6. 증거자료",
-    data.evidence || "[문자, 카카오톡, 계좌이체내역, 사진, 진단서, 녹취, CCTV 등]",
+    data.evidence
+      ? "☑ 고소인은 고소인의 진술 외에 제출할 증거가 있습니다."
+      : "□ 고소인은 고소인의 진술 외에 제출할 증거가 없습니다.",
+    `증거자료: ${data.evidence || "[문자, 카카오톡, 계좌이체내역, 사진, 진단서, 녹취, CCTV 등]"}`,
     "",
-    "7. 첨부서류",
-    "가. 증거자료 사본 각 1부",
-    "나. 신분증 사본 1부",
-    "다. 기타 피해 사실을 확인할 수 있는 자료",
+    "7. 관련사건의 수사 및 재판 여부*",
+    "① 중복 고소 여부: □ 있습니다 / ☑ 없습니다",
+    "② 관련 형사사건 수사 유무: □ 수사 중에 있습니다 / ☑ 수사 중에 있지 않습니다",
+    "③ 관련 민사소송 유무: □ 민사소송 중에 있습니다 / ☑ 민사소송 중에 있지 않습니다",
+    "기타사항: [관련 사건이 있으면 검찰청, 경찰서, 법원, 사건번호 등을 기재]",
     "",
-    "8. 유의사항",
-    "본 문서는 사용자가 입력한 사실관계를 바탕으로 작성한 초안이며 법률 자문이 아닙니다. 제출 전 변호사 또는 수사기관 상담을 권장합니다.",
+    "8. 기타",
+    "본 고소장에 기재한 내용은 고소인이 알고 있는 지식과 경험을 바탕으로 모두 사실대로 작성하였으며, 만일 허위사실을 고소하였을 때에는 형법 제156조 무고죄로 처벌받을 것임을 확인합니다.",
     "",
     today,
     "",
-    "고소인: ____________________ (서명 또는 인)",
+    "고소인: ____________________ (인)",
+    "제출인: ____________________ (인)",
+    "",
+    "[별지] 증거자료 세부 목록",
+    "",
+    "1. 인적증거 (목격자, 참고인 등)",
+    "성명: [참고인 성명] / 연락처: [연락처] / 입증하려는 내용: [무엇을 증명하는지]",
+    "",
+    "2. 증거서류 (진술서, 차용증, 금융거래내역서, 진단서 등)",
+    "1) [증거명] / 작성자: [작성자] / 제출 유무: □ 접수시 제출 □ 수사 중 제출",
+    "2) [증거명] / 작성자: [작성자] / 제출 유무: □ 접수시 제출 □ 수사 중 제출",
+    "",
+    "3. 증거물",
+    "1) [증거물] / 소유자: [소유자] / 제출 유무: □ 접수시 제출 □ 수사 중 제출",
+    "",
+    "4. 기타 증거",
+    "[그 밖의 증거가 있으면 기재]",
   ].join("\n");
 }
 
@@ -224,13 +261,13 @@ function localMeta() {
 
 function findMissingInfo(data) {
   const labels = [
-    ["complainant", "고소인 인적사항"],
-    ["accused", "피고소인 인적사항 또는 성명불상 사유"],
+    ["complainant", "고소인 성명"],
+    ["accused", "피고소인 성명 또는 성명불상 사유"],
     ["incidentDate", "사건 일시"],
     ["incidentPlace", "사건 장소"],
     ["damage", "피해금액 또는 피해내용"],
     ["evidence", "증거자료"],
-    ["story", "시간순 사건 설명"],
+    ["story", "범죄사실 설명"],
   ];
   const missing = labels.filter(([key]) => !String(data[key] || "").trim()).map(([, label]) => label);
   return missing.length ? missing : ["현재 입력 기준으로 핵심 항목은 채워져 있습니다."];
@@ -250,11 +287,6 @@ function renderDraft(text, meta = {}) {
   editor.value = text || "";
   renderList(missingList, meta.missingInfo || []);
   renderPrecedents(meta.precedentQueries || buildPrecedentQueries(getSelectedType()));
-}
-
-function renderLiveChecks() {
-  renderList(missingList, findMissingInfo(getPayload()));
-  renderPrecedents(buildPrecedentQueries(getSelectedType()));
 }
 
 function renderList(target, items) {
@@ -278,12 +310,6 @@ function renderPrecedents(items) {
     li.append(link);
     precedentList.append(li);
   }
-}
-
-async function copyDraft() {
-  if (!editor.value.trim()) return;
-  await navigator.clipboard.writeText(editor.value);
-  statusText.textContent = "초안을 클립보드에 복사했습니다.";
 }
 
 function getCheckedQuestions() {
@@ -314,14 +340,7 @@ function loadDraft() {
     selectedCaseType = saved.selectedCaseType || "fraud";
     renderCaseTypes();
     renderQuestions(saved.checkedQuestions || saved.formData?.checkedQuestions || []);
-
-    const data = saved.formData || {};
-    for (const element of form.elements) {
-      if (element.name && data[element.name] !== undefined) {
-        element.value = data[element.name];
-      }
-    }
-
+    setFormValues(saved.formData || {});
     renderDraft(saved.draftText || localDraft(), localMeta());
     const savedAt = saved.savedAt ? new Date(saved.savedAt).toLocaleString("ko-KR") : "저장된";
     statusText.textContent = `${savedAt} 초안을 불러왔습니다.`;
@@ -339,9 +358,7 @@ function autoSave() {
     draftText: editor.value,
   };
   localStorage.setItem(autoSaveStorageKey, JSON.stringify(saved));
-  if (autoSaveStatus) {
-    autoSaveStatus.textContent = "자동 저장됨";
-  }
+  if (autoSaveStatus) autoSaveStatus.textContent = "자동 저장됨";
 }
 
 function restoreAutoSavedState() {
@@ -351,18 +368,18 @@ function restoreAutoSavedState() {
   try {
     const saved = JSON.parse(raw);
     selectedCaseType = saved.selectedCaseType || selectedCaseType;
-    const data = saved.formData || {};
-    for (const element of form.elements) {
-      if (element.name && data[element.name] !== undefined) {
-        element.value = data[element.name];
-      }
-    }
-    if (autoSaveStatus) {
-      autoSaveStatus.textContent = "이전에 작성하던 내용을 불러왔습니다.";
-    }
+    setFormValues(saved.formData || {});
+    if (autoSaveStatus) autoSaveStatus.textContent = "이전에 작성하던 내용을 불러왔습니다.";
     return saved;
   } catch {
     return null;
+  }
+}
+
+function setFormValues(data) {
+  for (const element of form.elements) {
+    if (!element.name || data[element.name] === undefined) continue;
+    element.value = data[element.name];
   }
 }
 
@@ -379,19 +396,8 @@ async function shareToKakao() {
       window.Kakao.Share.sendDefault({
         objectType: "text",
         text: `${shareData.title}\n${shareData.text}`,
-        link: {
-          mobileWebUrl: shareData.url,
-          webUrl: shareData.url,
-        },
-        buttons: [
-          {
-            title: "열어보기",
-            link: {
-              mobileWebUrl: shareData.url,
-              webUrl: shareData.url,
-            },
-          },
-        ],
+        link: { mobileWebUrl: shareData.url, webUrl: shareData.url },
+        buttons: [{ title: "열어보기", link: { mobileWebUrl: shareData.url, webUrl: shareData.url } }],
       });
       statusText.textContent = "카카오톡 공유창을 열었습니다.";
       return;
@@ -411,9 +417,7 @@ async function ensureKakaoSdk() {
   if (!config.kakaoJavascriptKey) return false;
 
   await loadScript("https://t1.kakaocdn.net/kakao_js_sdk/2.7.4/kakao.min.js");
-  if (!window.Kakao?.isInitialized?.()) {
-    window.Kakao.init(config.kakaoJavascriptKey);
-  }
+  if (!window.Kakao?.isInitialized?.()) window.Kakao.init(config.kakaoJavascriptKey);
 
   kakaoSdkReady = true;
   return true;
@@ -447,19 +451,6 @@ async function fallbackShare(shareData) {
   statusText.textContent = "카카오 키가 없어 앱 링크를 복사했습니다.";
 }
 
-function clearForm() {
-  form.reset();
-  selectedCaseType = "fraud";
-  renderCaseTypes();
-  renderQuestions();
-  renderDraft(localDraft(), localMeta());
-  localStorage.removeItem(autoSaveStorageKey);
-  if (autoSaveStatus) {
-    autoSaveStatus.textContent = "입력 내용은 이 브라우저에 자동 저장됩니다.";
-  }
-  statusText.textContent = "입력값을 초기화했습니다.";
-}
-
 function downloadTxt() {
   const blob = new Blob([editor.value], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -472,7 +463,7 @@ function downloadTxt() {
 
 function setLoading(isLoading) {
   controls.generate.disabled = isLoading;
-  controls.template.disabled = isLoading;
+  if (controls.template) controls.template.disabled = isLoading;
   controls.generate.textContent = isLoading ? "생성 중" : "AI 초안 생성";
 }
 
