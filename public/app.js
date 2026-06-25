@@ -17,6 +17,8 @@ const controls = {
   save: $("#saveDraftBtn"),
   load: $("#loadDraftBtn"),
   kakaoShare: $("#kakaoShareBtn"),
+  menuSave: $("#menuSaveBtn"),
+  menuShare: $("#menuShareBtn"),
   txt: $("#downloadTxtBtn"),
   print: $("#printBtn"),
 };
@@ -63,11 +65,13 @@ async function init() {
     statusText.textContent = "템플릿 초안을 생성했습니다.";
     autoSave();
   });
-  controls.copy.addEventListener("click", copyDraft);
-  controls.clear.addEventListener("click", clearForm);
+  controls.copy?.addEventListener("click", copyDraft);
+  controls.clear?.addEventListener("click", clearForm);
   controls.save.addEventListener("click", saveDraft);
   controls.load.addEventListener("click", loadDraft);
   controls.kakaoShare.addEventListener("click", shareToKakao);
+  controls.menuSave.addEventListener("click", saveDraft);
+  controls.menuShare.addEventListener("click", shareToKakao);
   controls.txt.addEventListener("click", downloadTxt);
   controls.print.addEventListener("click", () => window.print());
   form.addEventListener("input", () => {
