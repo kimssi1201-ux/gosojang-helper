@@ -5,6 +5,7 @@ const grid = $("#caseTypeGrid");
 const questions = $("#dynamicQuestions");
 const editor = $("#draftEditor");
 const statusText = $("#statusText");
+const autoSaveStatus = $("#autoSaveStatus");
 const missingList = $("#missingList");
 const precedentList = $("#precedentList");
 
@@ -24,6 +25,7 @@ let caseTypes = [];
 let selectedCaseType = "fraud";
 let kakaoSdkReady = false;
 const draftStorageKey = "gosojang-helper:draft";
+const autoSaveStorageKey = "gosojang-helper:auto";
 
 const fallbackCaseTypes = [
   {
@@ -47,10 +49,11 @@ async function init() {
     caseTypes = fallbackCaseTypes;
   }
 
+  const restored = restoreAutoSavedState();
   renderCaseTypes();
-  renderQuestions();
-  renderDraft(localDraft(), {
-    missingInfo: ["사건 설명을 입력하면 누락 항목을 확인합니다."],
+  renderQuestions(restored?.checkedQuestions || []);
+  renderDraft(restored?.draftText || localDraft(), {
+    missingInfo: restored ? findMissingInfo(getPayload()) : ["사건 설명을 입력하면 누락 항목을 확인합니다."],
     precedentQueries: buildPrecedentQueries(getSelectedType()),
   });
 
@@ -58,6 +61,7 @@ async function init() {
   controls.template.addEventListener("click", () => {
     renderDraft(localDraft(), localMeta());
     statusText.textContent = "템플릿 초안을 생성했습니다.";
+    autoSave();
   });
   controls.copy.addEventListener("click", copyDraft);
   controls.clear.addEventListener("click", clearForm);
@@ -66,7 +70,12 @@ async function init() {
   controls.kakaoShare.addEventListener("click", shareToKakao);
   controls.txt.addEventListener("click", downloadTxt);
   controls.print.addEventListener("click", () => window.print());
-  form.addEventListener("input", renderLiveChecks);
+  form.addEventListener("input", () => {
+    renderLiveChecks();
+    autoSave();
+  });
+  questions.addEventListener("change", autoSave);
+  editor.addEventListener("input", autoSave);
 }
 
 function renderCaseTypes() {
@@ -82,17 +91,24 @@ function renderCaseTypes() {
       renderCaseTypes();
       renderQuestions();
       renderLiveChecks();
+      autoSave();
     });
     grid.append(button);
   }
 }
 
-function renderQuestions() {
+function renderQuestions(checkedQuestions = []) {
   questions.innerHTML = "";
   for (const text of getSelectedType().questions || []) {
-    const item = document.createElement("div");
+    const item = document.createElement("label");
     item.className = "question-item";
-    item.textContent = text;
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.value = text;
+    checkbox.checked = checkedQuestions.includes(text);
+    const span = document.createElement("span");
+    span.textContent = text;
+    item.append(checkbox, span);
     questions.append(item);
   }
 }
@@ -117,6 +133,7 @@ async function generateAiDraft() {
     const result = await response.json();
     if (!response.ok) throw new Error(result.message || "AI 초안 생성에 실패했습니다.");
     renderDraft(result.draftText, result);
+    autoSave();
     statusText.textContent = result.usedAi
       ? "AI 초안을 생성했습니다. 제출 전 반드시 사실관계를 직접 확인하세요."
       : "API 키가 없어 템플릿 초안을 생성했습니다.";
@@ -137,6 +154,7 @@ function getPayload() {
     caseTypeName: type.name,
     lawKeywords: type.lawKeywords || [],
     questions: type.questions || [],
+    checkedQuestions: getCheckedQuestions(),
   };
 }
 
@@ -168,6 +186,8 @@ function localDraft() {
     `가. 사건 일시: ${data.incidentDate || "[일시 기재]"}`,
     `나. 사건 장소: ${data.incidentPlace || "[장소 기재]"}`,
     `다. 피해 내용: ${data.damage || "[피해금액 또는 피해내용 기재]"}`,
+    "",
+    data.checkedQuestions?.length ? `확인한 항목: ${data.checkedQuestions.join(", ")}` : "확인한 항목: [체크리스트 확인 필요]",
     "",
     data.story || "[사건 경위를 시간순으로 구체적으로 기재합니다.]",
     "",
@@ -262,11 +282,16 @@ async function copyDraft() {
   statusText.textContent = "초안을 클립보드에 복사했습니다.";
 }
 
+function getCheckedQuestions() {
+  return [...questions.querySelectorAll('input[type="checkbox"]:checked')].map((input) => input.value);
+}
+
 function saveDraft() {
   const saved = {
     savedAt: new Date().toISOString(),
     selectedCaseType,
     formData: getPayload(),
+    checkedQuestions: getCheckedQuestions(),
     draftText: editor.value,
   };
   localStorage.setItem(draftStorageKey, JSON.stringify(saved));
@@ -284,7 +309,7 @@ function loadDraft() {
     const saved = JSON.parse(raw);
     selectedCaseType = saved.selectedCaseType || "fraud";
     renderCaseTypes();
-    renderQuestions();
+    renderQuestions(saved.checkedQuestions || saved.formData?.checkedQuestions || []);
 
     const data = saved.formData || {};
     for (const element of form.elements) {
@@ -298,6 +323,42 @@ function loadDraft() {
     statusText.textContent = `${savedAt} 초안을 불러왔습니다.`;
   } catch {
     statusText.textContent = "저장된 초안을 읽지 못했습니다.";
+  }
+}
+
+function autoSave() {
+  const saved = {
+    savedAt: new Date().toISOString(),
+    selectedCaseType,
+    formData: getPayload(),
+    checkedQuestions: getCheckedQuestions(),
+    draftText: editor.value,
+  };
+  localStorage.setItem(autoSaveStorageKey, JSON.stringify(saved));
+  if (autoSaveStatus) {
+    autoSaveStatus.textContent = "자동 저장됨";
+  }
+}
+
+function restoreAutoSavedState() {
+  const raw = localStorage.getItem(autoSaveStorageKey);
+  if (!raw) return null;
+
+  try {
+    const saved = JSON.parse(raw);
+    selectedCaseType = saved.selectedCaseType || selectedCaseType;
+    const data = saved.formData || {};
+    for (const element of form.elements) {
+      if (element.name && data[element.name] !== undefined) {
+        element.value = data[element.name];
+      }
+    }
+    if (autoSaveStatus) {
+      autoSaveStatus.textContent = "이전에 작성하던 내용을 불러왔습니다.";
+    }
+    return saved;
+  } catch {
+    return null;
   }
 }
 
@@ -388,6 +449,10 @@ function clearForm() {
   renderCaseTypes();
   renderQuestions();
   renderDraft(localDraft(), localMeta());
+  localStorage.removeItem(autoSaveStorageKey);
+  if (autoSaveStatus) {
+    autoSaveStatus.textContent = "입력 내용은 이 브라우저에 자동 저장됩니다.";
+  }
   statusText.textContent = "입력값을 초기화했습니다.";
 }
 
