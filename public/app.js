@@ -13,12 +13,15 @@ const controls = {
   template: $("#templateBtn"),
   copy: $("#copyBtn"),
   clear: $("#clearBtn"),
+  save: $("#saveDraftBtn"),
+  load: $("#loadDraftBtn"),
   txt: $("#downloadTxtBtn"),
   print: $("#printBtn"),
 };
 
 let caseTypes = [];
 let selectedCaseType = "fraud";
+const draftStorageKey = "gosojang-helper:draft";
 
 const fallbackCaseTypes = [
   {
@@ -56,6 +59,8 @@ async function init() {
   });
   controls.copy.addEventListener("click", copyDraft);
   controls.clear.addEventListener("click", clearForm);
+  controls.save.addEventListener("click", saveDraft);
+  controls.load.addEventListener("click", loadDraft);
   controls.txt.addEventListener("click", downloadTxt);
   controls.print.addEventListener("click", () => window.print());
   form.addEventListener("input", renderLiveChecks);
@@ -251,6 +256,45 @@ async function copyDraft() {
   if (!editor.value.trim()) return;
   await navigator.clipboard.writeText(editor.value);
   statusText.textContent = "초안을 클립보드에 복사했습니다.";
+}
+
+function saveDraft() {
+  const saved = {
+    savedAt: new Date().toISOString(),
+    selectedCaseType,
+    formData: getPayload(),
+    draftText: editor.value,
+  };
+  localStorage.setItem(draftStorageKey, JSON.stringify(saved));
+  statusText.textContent = "현재 입력 내용과 초안을 이 브라우저에 저장했습니다.";
+}
+
+function loadDraft() {
+  const raw = localStorage.getItem(draftStorageKey);
+  if (!raw) {
+    statusText.textContent = "저장된 초안이 없습니다.";
+    return;
+  }
+
+  try {
+    const saved = JSON.parse(raw);
+    selectedCaseType = saved.selectedCaseType || "fraud";
+    renderCaseTypes();
+    renderQuestions();
+
+    const data = saved.formData || {};
+    for (const element of form.elements) {
+      if (element.name && data[element.name] !== undefined) {
+        element.value = data[element.name];
+      }
+    }
+
+    renderDraft(saved.draftText || localDraft(), localMeta());
+    const savedAt = saved.savedAt ? new Date(saved.savedAt).toLocaleString("ko-KR") : "저장된";
+    statusText.textContent = `${savedAt} 초안을 불러왔습니다.`;
+  } catch {
+    statusText.textContent = "저장된 초안을 읽지 못했습니다.";
+  }
 }
 
 function clearForm() {
