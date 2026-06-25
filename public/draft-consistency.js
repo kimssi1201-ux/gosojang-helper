@@ -34,8 +34,17 @@ function patchDraftConsistency() {
   const data = getConsistencyData();
   const originalDraft = consistencyEditor.value;
   let draft = originalDraft;
+
   draft = patchPersonName(draft, "1. 고소인*", data.complainant || "[고소인 성명]");
+  draft = patchPersonDetail(draft, "1. 고소인*", "2. 피고소인*", "주민등록번호", "[제출 전 직접 기재]");
+  draft = patchPersonDetail(draft, "1. 고소인*", "2. 피고소인*", "주소", data.complainantAddress || "[주소]");
+  draft = patchPersonDetail(draft, "1. 고소인*", "2. 피고소인*", "전화", data.complainantPhone || "[연락처]");
+
   draft = patchPersonName(draft, "2. 피고소인*", data.accused || "[피고소인 성명 또는 성명불상]");
+  draft = patchPersonDetail(draft, "2. 피고소인*", "3. 고소취지*", "주민등록번호", "[알고 있는 경우 제출 전 직접 기재]");
+  draft = patchPersonDetail(draft, "2. 피고소인*", "3. 고소취지*", "주소", data.accusedAddress || "[주소 또는 알 수 없는 사유]");
+  draft = patchPersonDetail(draft, "2. 피고소인*", "3. 고소취지*", "전화", data.accusedContact || "[연락처 또는 계정]");
+
   draft = patchPurpose(draft, data);
   draft = patchFacts(draft, data);
   draft = patchEvidence(draft, data);
@@ -63,7 +72,11 @@ function getConsistencySnapshot() {
   const data = getConsistencyData();
   return JSON.stringify({
     complainant: data.complainant || "",
+    complainantPhone: data.complainantPhone || "",
+    complainantAddress: data.complainantAddress || "",
     accused: data.accused || "",
+    accusedContact: data.accusedContact || "",
+    accusedAddress: data.accusedAddress || "",
     caseTypeName: data.caseTypeName || "",
     incidentDate: data.incidentDate || "",
     incidentPlace: data.incidentPlace || "",
@@ -88,6 +101,19 @@ function patchPersonName(draft, sectionTitle, name) {
   const pattern = new RegExp(`(${escapedTitle}\\n)성명:.*`);
   if (!pattern.test(draft)) return draft;
   return draft.replace(pattern, `$1성명: ${name}`);
+}
+
+function patchPersonDetail(draft, sectionTitle, endTitle, label, value) {
+  const start = draft.indexOf(sectionTitle);
+  const end = draft.indexOf(endTitle, start + sectionTitle.length);
+  if (start < 0 || end < 0) return draft;
+
+  const section = draft.slice(start, end);
+  const pattern = new RegExp(`(^${escapeRegExp(label)}:).*`, "m");
+  if (!pattern.test(section)) return draft;
+
+  const patched = section.replace(pattern, `$1 ${value}`);
+  return `${draft.slice(0, start)}${patched}${draft.slice(end)}`;
 }
 
 function patchPurpose(draft, data) {
