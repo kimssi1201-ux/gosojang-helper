@@ -32,9 +32,14 @@
         <div id="caseTypeGrid" class="case-type-grid"></div>
 
         <div class="step-row"><span class="step-badge">2</span><h2>기본 정보</h2></div>
+        <p class="simple-notice">주민등록번호는 민감정보라 사이트에서 입력받지 않습니다. 제출 전 고소장에 직접 적으세요.</p>
         <form id="complaintForm" class="form-grid">
           <label>고소인<input name="complainant" placeholder="예: 홍길동" autocomplete="off" /></label>
+          <label>고소인 연락처<input name="complainantPhone" placeholder="예: 010-1234-5678" inputmode="tel" autocomplete="tel" /></label>
+          <label>고소인 주소<input name="complainantAddress" placeholder="예: 서울시 강남구 ○○로" autocomplete="street-address" /></label>
           <label>피고소인<input name="accused" placeholder="예: 김철수 또는 성명불상" autocomplete="off" /></label>
+          <label>피고소인 연락처/계정<input name="accusedContact" placeholder="예: 전화번호, 카카오톡 ID, 계정명" autocomplete="off" /></label>
+          <label>피고소인 주소/단서<input name="accusedAddress" placeholder="예: 주소, 직장, 차량번호, 계정 단서" autocomplete="off" /></label>
           <label>사건 일시<input name="incidentDateInput" type="datetime-local" /><input name="incidentDate" type="hidden" /></label>
           <label>사건 장소<input name="incidentPlace" placeholder="예: 서울 강남구 소재 사무실" /></label>
           <label>피해금액 또는 피해내용<input name="damage" placeholder="예: 500만원 / 전치 2주 상해" /></label>
