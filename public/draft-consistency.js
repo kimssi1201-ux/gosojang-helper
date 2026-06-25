@@ -100,7 +100,7 @@ function patchPersonName(draft, sectionTitle, name) {
   const escapedTitle = escapeRegExp(sectionTitle);
   const pattern = new RegExp(`(${escapedTitle}\\n)성명:.*`);
   if (!pattern.test(draft)) return draft;
-  return draft.replace(pattern, `$1성명: ${name}`);
+  return draft.replace(pattern, (_match, prefix) => `${prefix}성명: ${name}`);
 }
 
 function patchPersonDetail(draft, sectionTitle, endTitle, label, value) {
@@ -112,7 +112,7 @@ function patchPersonDetail(draft, sectionTitle, endTitle, label, value) {
   const pattern = new RegExp(`(^${escapeRegExp(label)}:).*`, "m");
   if (!pattern.test(section)) return draft;
 
-  const patched = section.replace(pattern, `$1 ${value}`);
+  const patched = section.replace(pattern, (_match, prefix) => `${prefix} ${value}`);
   return `${draft.slice(0, start)}${patched}${draft.slice(end)}`;
 }
 
