@@ -37,7 +37,7 @@ Cloudflare Pages에서 GitHub 연결을 쓰면 별도 빌드가 필요 없습니
 ```text
 Build command: npm run check
 Build output directory: public
-Root directory: gosojang-helper
+Root directory: 비워두기
 ```
 
 ## 주의
