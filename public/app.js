@@ -15,12 +15,14 @@ const controls = {
   clear: $("#clearBtn"),
   save: $("#saveDraftBtn"),
   load: $("#loadDraftBtn"),
+  kakaoShare: $("#kakaoShareBtn"),
   txt: $("#downloadTxtBtn"),
   print: $("#printBtn"),
 };
 
 let caseTypes = [];
 let selectedCaseType = "fraud";
+let kakaoSdkReady = false;
 const draftStorageKey = "gosojang-helper:draft";
 
 const fallbackCaseTypes = [
@@ -61,6 +63,7 @@ async function init() {
   controls.clear.addEventListener("click", clearForm);
   controls.save.addEventListener("click", saveDraft);
   controls.load.addEventListener("click", loadDraft);
+  controls.kakaoShare.addEventListener("click", shareToKakao);
   controls.txt.addEventListener("click", downloadTxt);
   controls.print.addEventListener("click", () => window.print());
   form.addEventListener("input", renderLiveChecks);
@@ -148,6 +151,7 @@ function localDraft() {
     month: "long",
     day: "numeric",
   });
+
   return [
     "고 소 장",
     "",
@@ -295,6 +299,87 @@ function loadDraft() {
   } catch {
     statusText.textContent = "저장된 초안을 읽지 못했습니다.";
   }
+}
+
+async function shareToKakao() {
+  const shareData = {
+    title: "고소장 도우미",
+    text: "AI가 형사 고소장 초안 작성을 도와주는 웹앱입니다.",
+    url: window.location.origin,
+  };
+
+  try {
+    const kakaoReady = await ensureKakaoSdk();
+    if (kakaoReady && window.Kakao?.Share?.sendDefault) {
+      window.Kakao.Share.sendDefault({
+        objectType: "text",
+        text: `${shareData.title}\n${shareData.text}`,
+        link: {
+          mobileWebUrl: shareData.url,
+          webUrl: shareData.url,
+        },
+        buttons: [
+          {
+            title: "열어보기",
+            link: {
+              mobileWebUrl: shareData.url,
+              webUrl: shareData.url,
+            },
+          },
+        ],
+      });
+      statusText.textContent = "카카오톡 공유창을 열었습니다.";
+      return;
+    }
+
+    await fallbackShare(shareData);
+  } catch {
+    await fallbackShare(shareData);
+  }
+}
+
+async function ensureKakaoSdk() {
+  if (kakaoSdkReady) return true;
+
+  const response = await fetch("/api/config");
+  const config = response.ok ? await response.json() : {};
+  if (!config.kakaoJavascriptKey) return false;
+
+  await loadScript("https://t1.kakaocdn.net/kakao_js_sdk/2.7.4/kakao.min.js");
+  if (!window.Kakao?.isInitialized?.()) {
+    window.Kakao.init(config.kakaoJavascriptKey);
+  }
+
+  kakaoSdkReady = true;
+  return true;
+}
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[src="${src}"]`);
+    if (existing) {
+      resolve();
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = true;
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.append(script);
+  });
+}
+
+async function fallbackShare(shareData) {
+  if (navigator.share) {
+    await navigator.share(shareData);
+    statusText.textContent = "공유창을 열었습니다.";
+    return;
+  }
+
+  await navigator.clipboard.writeText(shareData.url);
+  statusText.textContent = "카카오 키가 없어 앱 링크를 복사했습니다.";
 }
 
 function clearForm() {
