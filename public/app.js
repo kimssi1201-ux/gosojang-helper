@@ -26,6 +26,7 @@ let selectedCaseType = "fraud";
 let kakaoSdkReady = false;
 const draftStorageKey = "gosojang-helper:draft";
 const autoSaveStorageKey = "gosojang-helper:auto";
+const stableDraftApiUrl = "https://gosojang-helper.pages.dev/api/draft";
 
 const fallbackCaseTypes = [
   {
@@ -122,6 +123,10 @@ function renderQuestions(checkedQuestions = []) {
   }
 }
 
+function getDraftApiUrl() {
+  return ["seeyou.kr", "www.seeyou.kr"].includes(window.location.hostname) ? stableDraftApiUrl : "/api/draft";
+}
+
 async function generateDraft() {
   const payload = getPayload();
   if (!payload.story.trim()) {
@@ -134,9 +139,10 @@ async function generateDraft() {
   statusText.textContent = "검찰청 표준서식 흐름에 맞춰 정리하는 중입니다.";
 
   try {
-    const response = await fetch("/api/draft", {
+    const draftApiUrl = getDraftApiUrl();
+    const response = await fetch(draftApiUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": draftApiUrl.startsWith("http") ? "text/plain;charset=utf-8" : "application/json" },
       body: JSON.stringify(payload),
     });
     const result = await response.json();
