@@ -32,7 +32,7 @@
         <form id="complaintForm" class="form-grid">
           <label>고소인<input name="complainant" placeholder="예: 홍길동" autocomplete="off" /></label>
           <label>피고소인<input name="accused" placeholder="예: 김철수 또는 성명불상" autocomplete="off" /></label>
-          <label>사건 일시<input name="incidentDate" placeholder="예: 2026년 6월 1일 14시경" /></label>
+          <label>사건 일시<input name="incidentDateInput" type="datetime-local" /><input name="incidentDate" type="hidden" /></label>
           <label>사건 장소<input name="incidentPlace" placeholder="예: 서울 강남구 소재 사무실" /></label>
           <label>피해금액 또는 피해내용<input name="damage" placeholder="예: 500만원 / 전치 2주 상해" /></label>
           <label>증거자료<input name="evidence" placeholder="예: 문자, 계좌이체내역, 녹취, CCTV" /></label>
@@ -74,6 +74,30 @@
       <span><a href="/privacy.html">개인정보 안내</a> · <a href="https://www.law.go.kr/precSc.do" target="_blank" rel="noreferrer">국가법령정보센터 판례 검색</a></span>
     </footer>
 
+    <script>
+      (() => {
+        const dateInput = document.querySelector('[name="incidentDateInput"]');
+        const hiddenDate = document.querySelector('[name="incidentDate"]');
+        if (!dateInput || !hiddenDate) return;
+
+        function formatIncidentDate(value) {
+          const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+          if (!match) return "";
+          const [, year, month, day, hour, minute] = match;
+          let text = `${year}년 ${Number(month)}월 ${Number(day)}일 ${Number(hour)}시`;
+          if (minute !== "00") text += ` ${Number(minute)}분`;
+          return `${text}경`;
+        }
+
+        function syncIncidentDate() {
+          hiddenDate.value = formatIncidentDate(dateInput.value);
+        }
+
+        dateInput.addEventListener("input", syncIncidentDate);
+        dateInput.addEventListener("change", syncIncidentDate);
+        syncIncidentDate();
+      })();
+    </script>
     <script type="module" src="/app.js"></script>
   </body>
 </html>
