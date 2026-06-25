@@ -257,7 +257,8 @@ function localMeta() {
     missingInfo: findMissingInfo(getPayload()),
     precedentQueries: buildPrecedentQueries(getSelectedType()),
   };
-}\n
+}
+
 function findMissingInfo(data) {
   const labels = [
     ["complainant", "고소인 성명"],
