@@ -58,7 +58,7 @@ async function init() {
   });
   statusText.textContent = "기본정보를 입력하면 고소장이 자동으로 채워집니다.";
 
-  controls.generate?.addEventListener("click", generateAiDraft);
+  controls.generate?.addEventListener("click", generateDraft);
   controls.template?.addEventListener("click", syncDraftFromInputs);
   controls.save?.addEventListener("click", saveDraft);
   controls.load?.addEventListener("click", loadDraft);
@@ -122,7 +122,7 @@ function renderQuestions(checkedQuestions = []) {
   }
 }
 
-async function generateAiDraft() {
+async function generateDraft() {
   const payload = getPayload();
   if (!payload.story.trim()) {
     statusText.textContent = "사건 설명을 먼저 입력하세요.";
@@ -131,7 +131,7 @@ async function generateAiDraft() {
   }
 
   setLoading(true);
-  statusText.textContent = "AI가 검찰청 표준서식 흐름에 맞춰 정리하는 중입니다.";
+  statusText.textContent = "검찰청 표준서식 흐름에 맞춰 정리하는 중입니다.";
 
   try {
     const response = await fetch("/api/draft", {
@@ -140,11 +140,11 @@ async function generateAiDraft() {
       body: JSON.stringify(payload),
     });
     const result = await response.json();
-    if (!response.ok) throw new Error(result.message || "AI 초안 생성에 실패했습니다.");
+    if (!response.ok) throw new Error(result.message || "초안 생성에 실패했습니다.");
     renderDraft(result.draftText, result);
     autoSave();
     statusText.textContent = result.usedAi
-      ? "AI 초안을 제출용 고소장 흐름으로 생성했습니다. 제출 전 사실관계를 확인하세요."
+      ? "고소장 초안을 제출용 흐름으로 생성했습니다. 제출 전 사실관계를 확인하세요."
       : "기본 고소장 양식으로 생성했습니다.";
   } catch (error) {
     renderDraft(localDraft(), localMeta());
@@ -443,7 +443,7 @@ function setFormValues(data) {
 async function shareToKakao() {
   const shareData = {
     title: "고소장 도우미",
-    text: "AI가 형사 고소장 초안 작성을 도와주는 사이트입니다.",
+    text: "형사 고소장 초안 작성을 도와주는 사이트입니다.",
     url: window.location.origin,
   };
 
@@ -521,7 +521,7 @@ function downloadTxt() {
 function setLoading(isLoading) {
   controls.generate.disabled = isLoading;
   if (controls.template) controls.template.disabled = isLoading;
-  controls.generate.textContent = isLoading ? "생성 중" : "AI 초안 생성";
+  controls.generate.textContent = isLoading ? "생성 중" : "초안 생성";
 }
 
 function escapeHtml(value) {
