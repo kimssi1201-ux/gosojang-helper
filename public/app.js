@@ -257,8 +257,7 @@ function localMeta() {
     missingInfo: findMissingInfo(getPayload()),
     precedentQueries: buildPrecedentQueries(getSelectedType()),
   };
-}
-
+}\n
 function findMissingInfo(data) {
   const labels = [
     ["complainant", "고소인 성명"],
@@ -386,7 +385,7 @@ function setFormValues(data) {
 async function shareToKakao() {
   const shareData = {
     title: "고소장 도우미",
-    text: "AI가 형사 고소장 초안 작성을 도와주는 웹앱입니다.",
+    text: "AI가 형사 고소장 초안 작성을 도와주는 사이트입니다.",
     url: window.location.origin,
   };
 
@@ -448,7 +447,7 @@ async function fallbackShare(shareData) {
   }
 
   await navigator.clipboard.writeText(shareData.url);
-  statusText.textContent = "카카오 키가 없어 앱 링크를 복사했습니다.";
+  statusText.textContent = "카카오 키가 없어 사이트 링크를 복사했습니다.";
 }
 
 function downloadTxt() {
