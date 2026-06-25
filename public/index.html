@@ -11,28 +11,24 @@
     <header class="app-header">
       <div class="brand">
         <div class="brand-mark" aria-hidden="true">ㄱ</div>
-        <div>
-          <h1>고소장 도우미</h1>
-          <p>형사사건 사실관계를 정리해 고소장 초안 작성을 돕습니다.</p>
-        </div>
+        <div><h1>고소장 도우미</h1></div>
       </div>
-      <div class="header-actions">
-        <button id="clearBtn" class="ghost-button" type="button">초기화</button>
-        <button id="copyBtn" class="primary-button" type="button">복사</button>
-      </div>
+      <nav class="top-menu" aria-label="주요 메뉴">
+        <a href="#write">작성</a>
+        <a href="#draft">초안</a>
+        <button id="menuSaveBtn" type="button">저장</button>
+        <button id="menuShareBtn" type="button">공유</button>
+      </nav>
     </header>
 
     <main class="workspace">
-      <section class="input-pane" aria-label="사건 입력">
-        <div class="notice">
-          <strong>중요 안내</strong>
-          <span>본 서비스는 사용자가 입력한 사실관계를 바탕으로 문서 초안을 작성하는 보조 도구이며, 법률 자문이 아닙니다.</span>
-        </div>
+      <section id="write" class="input-pane" aria-label="사건 입력">
+        <p class="simple-notice">입력한 내용을 바탕으로 고소장 초안을 만듭니다. 법률 자문은 아닙니다.</p>
 
         <div class="wizard-progress" aria-label="작성 단계">
-          <span class="active">1. 사건 선택</span>
-          <span>2. 정보 입력</span>
-          <span>3. 초안 확인</span>
+          <span class="active">사건 선택</span>
+          <span>정보 입력</span>
+          <span>초안 확인</span>
         </div>
 
         <div class="step-row"><span class="step-badge">1</span><h2>범죄유형</h2></div>
@@ -58,7 +54,7 @@
         <p id="autoSaveStatus" class="autosave-status">입력 내용은 이 브라우저에 자동 저장됩니다.</p>
       </section>
 
-      <section class="output-pane" aria-label="고소장 미리보기">
+      <section id="draft" class="output-pane" aria-label="고소장 미리보기">
         <div class="preview-toolbar">
           <div><h2>고소장 초안</h2><p id="statusText">입력 후 초안을 생성하세요.</p></div>
           <div class="preview-actions">
