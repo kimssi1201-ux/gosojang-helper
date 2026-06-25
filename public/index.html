@@ -36,6 +36,9 @@
           <label>사건 장소<input name="incidentPlace" placeholder="예: 서울 강남구 소재 사무실" /></label>
           <label>피해금액 또는 피해내용<input name="damage" placeholder="예: 500만원 / 전치 2주 상해" /></label>
           <label>증거자료<input name="evidence" placeholder="예: 문자, 계좌이체내역, 녹취, CCTV" /></label>
+          <label class="full-width photo-field">사진 첨부<input id="photoInput" type="file" accept="image/*" multiple /></label>
+          <button id="clearPhotoBtn" class="ghost-button photo-clear-button" type="button" hidden>사진 지우기</button>
+          <div id="photoPreview" class="photo-preview full-width" hidden></div>
           <label class="full-width">사건 설명<textarea name="story" rows="8" placeholder="언제, 어디서, 누가, 어떤 말이나 행동을 했고, 어떤 피해가 발생했는지 시간순으로 적어주세요."></textarea></label>
         </form>
 
@@ -61,6 +64,7 @@
         </div>
 
         <textarea id="draftEditor" class="draft-editor" spellcheck="false"></textarea>
+        <div id="draftPhotoPreview" class="draft-photo-preview" hidden></div>
 
         <div class="reference-panel">
           <div><h3>누락 체크</h3><ul id="missingList"></ul></div>
@@ -99,5 +103,6 @@
       })();
     </script>
     <script type="module" src="/app.js"></script>
+    <script type="module" src="/photo-attachments.js"></script>
   </body>
 </html>
