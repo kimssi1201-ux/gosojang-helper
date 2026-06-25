@@ -145,6 +145,12 @@ label,
   border: 1px solid var(--line);
 }
 
+.kakao-button {
+  background: #fee500;
+  color: #181600;
+  border-color: #ead200;
+}
+
 .wide {
   flex: 1;
 }
