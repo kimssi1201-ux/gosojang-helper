@@ -32,7 +32,8 @@ function patchDraftConsistency() {
   consistencyApplying = true;
 
   const data = getConsistencyData();
-  let draft = consistencyEditor.value;
+  const originalDraft = consistencyEditor.value;
+  let draft = originalDraft;
   draft = patchPersonName(draft, "1. 고소인*", data.complainant || "[고소인 성명]");
   draft = patchPersonName(draft, "2. 피고소인*", data.accused || "[피고소인 성명 또는 성명불상]");
   draft = patchPurpose(draft, data);
@@ -42,6 +43,10 @@ function patchDraftConsistency() {
   consistencyEditor.value = draft;
   consistencyLastSnapshot = getConsistencySnapshot();
   consistencyApplying = false;
+
+  if (draft !== originalDraft) {
+    consistencyEditor.dispatchEvent(new Event("input", { bubbles: true }));
+  }
 }
 
 function getConsistencyData() {
@@ -95,7 +100,7 @@ function patchFacts(draft, data) {
   const oldBody = oldSection
     .replace(/^4\. 범죄사실\*\s*/u, "")
     .split("\n")
-    .filter((line) => !/^가\. 사건 일시:|^나\. 사건 장소:|^다\. 피해 내용:|^라\. 사건 유형:|^마\. 상세 경위\s*$/u.test(line.trim()))
+    .filter((line) => !/^가\. 사건 일시:|^나\. 사건 장소:|^다\. 피해 내용:|^라\. 사건 유형:|^마\. 상세 경위\s*$|^확인한 항목:/u.test(line.trim()))
     .join("\n")
     .trim();
 
