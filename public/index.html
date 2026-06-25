@@ -7,8 +7,9 @@
     <meta name="description" content="AI가 사건 내용을 정리해 형사 고소장 초안 작성을 도와주는 사이트" />
     <link rel="stylesheet" href="/styles.css" />
     <style>
+      .inline-field-row { display: grid; grid-column: 1 / -1; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 10px; }
       @media (max-width: 980px) { body { padding-bottom: 0; } }
-      @media (max-width: 640px) { body { padding-bottom: 0; } }
+      @media (max-width: 640px) { body { padding-bottom: 0; } .inline-field-row { grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); } .inline-field-row input { padding-left: 10px; padding-right: 10px; } }
     </style>
   </head>
   <body id="top">
@@ -38,8 +39,10 @@
         <div class="step-row"><span class="step-badge">2</span><h2>기본 정보</h2></div>
         <p class="simple-notice">주민등록번호는 민감정보라 사이트에서 입력받지 않습니다. 제출 전 고소장에 직접 적으세요.</p>
         <form id="complaintForm" class="form-grid">
-          <label>고소인<input name="complainant" placeholder="예: 홍길동" autocomplete="off" /></label>
-          <label>고소인 연락처<input name="complainantPhone" placeholder="예: 010-1234-5678" inputmode="tel" autocomplete="tel" /></label>
+          <div class="inline-field-row">
+            <label>고소인<input name="complainant" placeholder="예: 홍길동" autocomplete="off" /></label>
+            <label>연락처<input name="complainantPhone" placeholder="예: 010-1234-5678" inputmode="tel" autocomplete="tel" /></label>
+          </div>
           <label>고소인 주소<input name="complainantAddress" placeholder="예: 서울시 강남구 ○○로" autocomplete="street-address" /></label>
           <label>피고소인<input name="accused" placeholder="예: 김철수 또는 성명불상" autocomplete="off" /></label>
           <label>피고소인 연락처/계정<input name="accusedContact" placeholder="예: 전화번호, 카카오톡 ID, 계정명" autocomplete="off" /></label>
