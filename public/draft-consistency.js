@@ -85,6 +85,7 @@ function getConsistencySnapshot() {
     damage: data.damage || "",
     evidence: data.evidence || "",
     story: data.story || "",
+    checkedQuestions: getCheckedQuestionsFromPage().join("|"),
     draft: consistencyEditor.value,
   });
 }
@@ -124,38 +125,47 @@ function patchPurpose(draft, data) {
 }
 
 function patchFacts(draft, data) {
-  const oldSection = extractSection(draft, "4. 범죄사실*", "5. 고소이유");
-  const oldBody = oldSection
-    .replace(/^4\. 범죄사실\*\s*/u, "")
-    .split("\n")
-    .filter((line) => !/^가\. 사건 일시:|^나\. 사건 장소:|^다\. 피해 내용:|^라\. 사건 유형:|^마\. 상세 경위\s*$|^확인한 항목:/u.test(line.trim()))
-    .join("\n")
-    .trim();
+  const accusedName = data.accused || "[피고소인 성명 또는 성명불상]";
+  const accusedDetails = [data.accusedContact && `연락처/계정: ${data.accusedContact}`, data.accusedAddress && `주소/단서: ${data.accusedAddress}`].filter(Boolean);
+  const accusedLine = accusedDetails.length
+    ? `피고소인은 ${accusedName}(${accusedDetails.join(", ")})입니다.`
+    : `피고소인은 ${accusedName}입니다.`;
+  const unknownLine = /성명불상|미상|모름|불상/u.test(accusedName)
+    ? "현재 피고소인의 정확한 인적사항을 알 수 없으나, 위 연락처·계정·주소 단서와 피해 경위로 피고소인을 특정할 수 있습니다."
+    : "";
+  const conduct = String(data.story || "").trim() || "[피고소인이 한 말, 행동, 돈이나 물건을 받은 방법, 폭행·협박·게시글 등 구체적 행위를 시간순으로 기재]";
+  const checkedQuestions = getCheckedQuestionsFromPage();
+  const checkedLine = checkedQuestions.length ? checkedQuestions.join(", ") : "[해당되는 추가 질문을 체크하면 자동 반영]";
 
-  const detail = data.story || oldBody || "[사건 경위를 시간순으로 구체적으로 기재합니다.]";
-  const checkedQuestions = data.checkedQuestions || getCheckedQuestionsFromPage();
   const section = [
     "4. 범죄사실*",
-    `가. 사건 일시: ${data.incidentDate || "[일시 기재]"}`,
-    `나. 사건 장소: ${data.incidentPlace || "[장소 기재]"}`,
-    `다. 피해 내용: ${data.damage || "[피해금액 또는 피해내용 기재]"}`,
-    `라. 사건 유형: ${data.caseTypeName || "[범죄유형]"}`,
-    checkedQuestions.length ? `마. 확인한 항목: ${checkedQuestions.join(", ")}` : "마. 확인한 항목: [해당되는 질문을 체크하면 자동 반영]",
+    "가. 피고소인 특정",
+    accusedLine,
+    unknownLine,
     "",
-    "바. 상세 경위",
-    detail,
-  ].join("\n");
+    "나. 범행 일시와 장소",
+    `피고소인은 ${data.incidentDate || "[일시 기재]"}, ${data.incidentPlace || "[장소 기재]"}에서 아래 행위를 하였습니다.`,
+    "",
+    "다. 범행 방법과 구체적 행위",
+    conduct,
+    "",
+    "라. 피해 결과",
+    `그 결과 고소인은 ${data.damage || "[피해금액 또는 피해내용 기재]"}의 피해를 입었습니다.`,
+    "",
+    "마. 범죄유형 및 보충 사정",
+    `위 행위는 ${data.caseTypeName || "[범죄유형]"} 혐의와 관련된 사실로 정리됩니다.`,
+    `추가 확인 항목: ${checkedLine}`,
+  ].filter((line) => line !== "").join("\n");
 
   return replaceSection(draft, "4. 범죄사실*", "5. 고소이유", section);
 }
 
 function patchReason(draft, data) {
-  const storyText = data.story ? "고소인은 위 사건 경위를 시간순으로 정리하여 제출하며, 입력한 사실관계에 대한 수사를 요청합니다." : "고소인은 사건 경위를 추가로 보완하여 제출할 예정입니다.";
+  const storyText = data.story ? "고소인은 위 범죄사실을 사실 중심으로 정리하여 제출하며, 수사기관의 사실관계 확인을 요청합니다." : "고소인은 사건 경위를 추가로 보완하여 제출할 예정입니다.";
   const reason = [
     "5. 고소이유",
-    `위 사실관계는 ${data.caseTypeName || "형사사건"} 혐의와 관련될 수 있습니다.`,
+    `위 범죄사실은 ${data.caseTypeName || "형사사건"} 혐의와 관련될 수 있습니다.`,
     data.damage ? `고소인은 이 사건으로 ${data.damage}의 피해를 입었습니다.` : "고소인은 이 사건으로 피해를 입었습니다.",
-    data.incidentDate || data.incidentPlace ? `사건은 ${data.incidentDate || "[일시]"}, ${data.incidentPlace || "[장소]"}에서 발생한 것으로 정리됩니다.` : "사건 일시와 장소는 입력 후 자동 반영됩니다.",
     storyText,
     "따라서 피고소인에 대한 사실관계를 확인하고 법에 따라 처리해 주시기 바랍니다.",
   ].join("\n");
@@ -209,13 +219,6 @@ function splitEvidence(value) {
 
 function getCheckedQuestionsFromPage() {
   return [...document.querySelectorAll('#dynamicQuestions input[type="checkbox"]:checked')].map((input) => input.value);
-}
-
-function extractSection(draft, startTitle, endTitle) {
-  const start = draft.indexOf(startTitle);
-  const end = draft.indexOf(endTitle, start + startTitle.length);
-  if (start < 0 || end < 0) return "";
-  return draft.slice(start, end).trim();
 }
 
 function replaceSection(draft, startTitle, endTitle, newSection) {
