@@ -47,7 +47,9 @@ function patchDraftConsistency() {
 
   draft = patchPurpose(draft, data);
   draft = patchFacts(draft, data);
+  draft = patchReason(draft, data);
   draft = patchEvidence(draft, data);
+  draft = patchAttachmentList(draft, data);
 
   consistencyEditor.value = draft;
   consistencyLastSnapshot = getConsistencySnapshot();
@@ -130,28 +132,83 @@ function patchFacts(draft, data) {
     .join("\n")
     .trim();
 
-  const detail = oldBody || data.story || "[사건 경위를 시간순으로 구체적으로 기재합니다.]";
+  const detail = data.story || oldBody || "[사건 경위를 시간순으로 구체적으로 기재합니다.]";
+  const checkedQuestions = data.checkedQuestions || getCheckedQuestionsFromPage();
   const section = [
     "4. 범죄사실*",
     `가. 사건 일시: ${data.incidentDate || "[일시 기재]"}`,
     `나. 사건 장소: ${data.incidentPlace || "[장소 기재]"}`,
     `다. 피해 내용: ${data.damage || "[피해금액 또는 피해내용 기재]"}`,
     `라. 사건 유형: ${data.caseTypeName || "[범죄유형]"}`,
+    checkedQuestions.length ? `마. 확인한 항목: ${checkedQuestions.join(", ")}` : "마. 확인한 항목: [해당되는 질문을 체크하면 자동 반영]",
     "",
-    "마. 상세 경위",
+    "바. 상세 경위",
     detail,
   ].join("\n");
 
   return replaceSection(draft, "4. 범죄사실*", "5. 고소이유", section);
 }
 
+function patchReason(draft, data) {
+  const storyText = data.story ? "고소인은 위 사건 경위를 시간순으로 정리하여 제출하며, 입력한 사실관계에 대한 수사를 요청합니다." : "고소인은 사건 경위를 추가로 보완하여 제출할 예정입니다.";
+  const reason = [
+    "5. 고소이유",
+    `위 사실관계는 ${data.caseTypeName || "형사사건"} 혐의와 관련될 수 있습니다.`,
+    data.damage ? `고소인은 이 사건으로 ${data.damage}의 피해를 입었습니다.` : "고소인은 이 사건으로 피해를 입었습니다.",
+    data.incidentDate || data.incidentPlace ? `사건은 ${data.incidentDate || "[일시]"}, ${data.incidentPlace || "[장소]"}에서 발생한 것으로 정리됩니다.` : "사건 일시와 장소는 입력 후 자동 반영됩니다.",
+    storyText,
+    "따라서 피고소인에 대한 사실관계를 확인하고 법에 따라 처리해 주시기 바랍니다.",
+  ].join("\n");
+
+  return replaceSection(draft, "5. 고소이유", "6. 증거자료", reason);
+}
+
 function patchEvidence(draft, data) {
-  const checkedLine = data.evidence
+  const evidenceItems = splitEvidence(data.evidence);
+  const checkedLine = evidenceItems.length
     ? "☑ 고소인은 고소인의 진술 외에 제출할 증거가 있습니다."
     : "□ 고소인은 고소인의 진술 외에 제출할 증거가 없습니다.";
-  const evidenceLine = `증거자료: ${data.evidence || "[문자, 카카오톡, 계좌이체내역, 사진, 진단서, 녹취, CCTV 등]"}`;
+  const evidenceLine = `증거자료: ${evidenceItems.length ? evidenceItems.join(", ") : "[문자, 카카오톡, 계좌이체내역, 사진, 진단서, 녹취, CCTV 등]"}`;
   const section = ["6. 증거자료", checkedLine, evidenceLine].join("\n");
   return replaceSection(draft, "6. 증거자료", "7. 관련사건의 수사 및 재판 여부*", section);
+}
+
+function patchAttachmentList(draft, data) {
+  const evidenceItems = splitEvidence(data.evidence);
+  const documentRows = evidenceItems.length
+    ? evidenceItems.map((item, index) => `${index + 1}) ${item} / 작성자 또는 보관자: [직접 기재] / 제출 유무: ☑ 접수시 제출 □ 수사 중 제출`)
+    : ["1) [증거명] / 작성자 또는 보관자: [직접 기재] / 제출 유무: □ 접수시 제출 □ 수사 중 제출"];
+
+  const section = [
+    "[별지] 증거자료 세부 목록",
+    "",
+    "1. 인적증거 (목격자, 참고인 등)",
+    "성명: [참고인 성명] / 연락처: [연락처] / 입증하려는 내용: [무엇을 증명하는지]",
+    "",
+    "2. 증거서류·사진·자료",
+    ...documentRows,
+    "",
+    "3. 증거물",
+    "1) [증거물] / 소유자: [소유자] / 제출 유무: □ 접수시 제출 □ 수사 중 제출",
+    "",
+    "4. 기타 증거",
+    evidenceItems.length ? "위 목록 외 추가 증거가 있으면 직접 기재합니다." : "[그 밖의 증거가 있으면 기재]",
+  ].join("\n");
+
+  const start = draft.indexOf("[별지] 증거자료 세부 목록");
+  if (start < 0) return draft;
+  return `${draft.slice(0, start)}${section}`;
+}
+
+function splitEvidence(value) {
+  return String(value || "")
+    .split(/[,，、\/\n]/u)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function getCheckedQuestionsFromPage() {
+  return [...document.querySelectorAll('#dynamicQuestions input[type="checkbox"]:checked')].map((input) => input.value);
 }
 
 function extractSection(draft, startTitle, endTitle) {
