@@ -279,7 +279,9 @@ function buildFactSection(data, evidenceItems) {
   const unknownLine = /성명불상|미상|모름|불상/u.test(accusedName)
     ? "현재 피고소인의 정확한 인적사항 전부를 알 수는 없으나, 위 연락처·계정·주소 단서, 대화내역, 송금내역 등으로 피고소인을 특정할 수 있을 것으로 보입니다."
     : "";
-  const checkedLine = data.checkedQuestions?.length ? data.checkedQuestions.join(" / ") : "[해당되는 추가 확인 질문을 체크하면 이 부분에 반영됩니다]";
+  const checkedLine = data.checkedQuestions?.length
+    ? data.checkedQuestions.join(" / ")
+    : "[추가로 확인된 보강 사실이 있으면 위 체크 항목에 반영됩니다]";
   const requirements = getCaseTypeRequirements(data).join(" / ");
 
   return [
@@ -305,7 +307,7 @@ function buildFactSection(data, evidenceItems) {
       : "현재 제출할 증거자료가 구체적으로 정리되지 않았습니다. 문자, 카카오톡, 계좌이체내역, 사진, 진단서, 녹취, CCTV 등 사건을 뒷받침할 자료를 제출 전 정리합니다.",
     "",
     "사. 범죄유형 및 보충 사정",
-    `이 사건은 ${valueOr(data.caseTypeName, "[범죄유형]")} 혐의와 관련된 사실로 정리됩니다. 이 유형에서 특히 확인할 내용은 ${requirements}입니다. 추가 확인 항목은 ${checkedLine}입니다.`,
+    `이 사건은 ${valueOr(data.caseTypeName, "[범죄유형]")} 혐의와 관련된 사실로 정리됩니다. 이 유형에서 특히 확인할 내용은 ${requirements}입니다. 현재 고소인이 확인한 보강 사실은 ${checkedLine}입니다.`,
   ].filter((line) => line !== "").join("\n");
 }
 

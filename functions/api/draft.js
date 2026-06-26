@@ -73,7 +73,7 @@ async function callOpenAI(payload, env) {
           content: JSON.stringify(
             {
               instruction:
-                "아래 입력을 바탕으로 실제 제출용 고소장 초안을 작성하세요. 반드시 고소취지, 범죄사실, 고소이유, 증거자료, 별지 증거목록, 제출 전 확인사항을 작성합니다. 범죄사실은 다음 소제목을 빠짐없이 포함하세요: 가. 피고소인 특정 / 나. 고소인과 피고소인의 관계 및 사건 경위 / 다. 범행 일시와 장소 / 라. 범행 방법과 구체적 행위 / 마. 피해 결과 / 바. 증거와 연결되는 사실 / 사. 범죄유형 및 보충 사정. 범죄사실은 짧은 메모가 아니라 문단형으로 작성하고, 사용자가 적은 사건 설명을 시간순으로 풀어 쓰세요. 증거자료는 각 증거가 무엇을 입증하는지 연결해서 적으세요.",
+                "아래 입력을 바탕으로 실제 제출용 고소장 초안을 작성하세요. 반드시 고소취지, 범죄사실, 고소이유, 증거자료, 별지 증거목록, 제출 전 확인사항을 작성합니다. payload.checkedQuestions는 사용자가 확실히 설명할 수 있다고 체크한 보강 사실이므로, 단순 나열하지 말고 범죄사실의 관련 문단에 자연스럽게 반영하세요. 범죄사실은 다음 소제목을 빠짐없이 포함하세요: 가. 피고소인 특정 / 나. 고소인과 피고소인의 관계 및 사건 경위 / 다. 범행 일시와 장소 / 라. 범행 방법과 구체적 행위 / 마. 피해 결과 / 바. 증거와 연결되는 사실 / 사. 범죄유형 및 보충 사정. 범죄사실은 짧은 메모가 아니라 문단형으로 작성하고, 사용자가 적은 사건 설명을 시간순으로 풀어 쓰세요. 증거자료는 각 증거가 무엇을 입증하는지 연결해서 적으세요.",
               caseTypeRequirements: getCaseTypeRequirements(payload),
               payload,
             },
@@ -240,7 +240,7 @@ function buildFactSection(payload, evidenceItems) {
     : "";
   const checkedLine = Array.isArray(payload.checkedQuestions) && payload.checkedQuestions.length
     ? payload.checkedQuestions.join(" / ")
-    : "[해당되는 추가 확인 질문을 체크하면 이 부분에 반영됩니다]";
+    : "[추가로 확인된 보강 사실이 있으면 위 체크 항목에 반영됩니다]";
   const requirements = getCaseTypeRequirements(payload).join(" / ");
 
   return [
@@ -266,7 +266,7 @@ function buildFactSection(payload, evidenceItems) {
       : "현재 제출할 증거자료가 구체적으로 정리되지 않았습니다. 문자, 카카오톡, 계좌이체내역, 사진, 진단서, 녹취, CCTV 등 사건을 뒷받침할 자료를 제출 전 정리합니다.",
     "",
     "사. 범죄유형 및 보충 사정",
-    `이 사건은 ${valueOr(payload.caseTypeName, "[범죄유형]")} 혐의와 관련된 사실로 정리됩니다. 이 유형에서 특히 확인할 내용은 ${requirements}입니다. 추가 확인 항목은 ${checkedLine}입니다.`,
+    `이 사건은 ${valueOr(payload.caseTypeName, "[범죄유형]")} 혐의와 관련된 사실로 정리됩니다. 이 유형에서 특히 확인할 내용은 ${requirements}입니다. 현재 고소인이 확인한 보강 사실은 ${checkedLine}입니다.`,
   ].filter((line) => line !== "").join("\n");
 }
 
