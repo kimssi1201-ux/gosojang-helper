@@ -154,7 +154,7 @@ function getDraftApiUrl() {
 async function generateDraft() {
   const payload = getPayload();
   if (!payload.story.trim()) {
-    statusText.textContent = "사건 설명을 먼저 입력하세요.";
+    statusText.textContent = "피해사실을 먼저 입력하세요.";
     form.elements.story.focus();
     return;
   }
@@ -1180,7 +1180,7 @@ var checkMissingFields = function (data) {
     [accusedKnown, "피고소인 성명, 연락처, 주소, 계정, 계좌번호 등 특정 단서가 없습니다."],
     [data.incidentDate, "사건 일시가 구체적이지 않습니다. 가능한 날짜 범위라도 입력하세요."],
     [data.incidentPlace, "사건 장소가 없습니다. 장소는 관할 수사기관과 범죄사실 특정에 도움이 됩니다."],
-    [data.story, "사건 설명이 부족합니다. 실제로 한 말, 보낸 메시지, 받은 돈, 폭행 방법 등을 시간순으로 적으세요."],
+    [data.story, "피해사실 작성이 부족합니다. 실제로 한 말, 보낸 메시지, 받은 돈, 폭행 방법 등을 시간순으로 적으세요."],
     [data.damage || data.damageDetail, "피해 내용이 없습니다. 피해금액, 치료기간, 수리비, 영업손실 등을 적으세요."],
     [data.evidence || data.evidenceDescription, "증거자료가 없습니다. 증거명과 입증하려는 사실을 함께 적으세요."],
   ];
@@ -1670,7 +1670,7 @@ var checkMissingFields = function (data) {
     [accusedKnown, "상대방 이름, 연락처, 계정, 계좌번호 등 아는 정보를 하나 이상 입력하세요."],
     [data.incidentDate, "사건 날짜를 입력하세요. 정확히 모르면 대략적인 날짜라도 적으세요."],
     [data.incidentPlace, "사건 장소나 플랫폼을 입력하세요."],
-    [data.story, "상대방이 실제로 한 말이나 행동을 적으세요."],
+    [data.story, "피해사실을 적으세요. 상대방이 실제로 한 말이나 행동과 그 결과를 적으면 됩니다."],
     [data.damage || data.damageDetail, "피해금액, 치료기간, 수리비, 영업손실 등 피해 내용을 적으세요."],
     [evidenceList.length, "증거자료를 하나 이상 정리하세요."],
     [evidenceList.some((item) => item.proves || item.description), "증거가 무엇을 보여주는지 적으세요."],
@@ -1687,7 +1687,7 @@ function calculateCompletionScore(data) {
     [[data.accused, data.accusedContact, data.accusedAddress, data.accusedClue].some((value) => String(value || "").trim()), "상대방을 특정할 단서가 필요합니다."],
     [data.incidentDate, "사건 날짜가 필요합니다."],
     [data.incidentPlace, "사건 장소나 플랫폼이 필요합니다."],
-    [data.story, "상대방이 한 말이나 행동이 필요합니다."],
+    [data.story, "피해사실 작성이 필요합니다."],
     [data.damage || data.damageDetail, "피해 내용이 필요합니다."],
     [evidenceList.length, "증거자료가 필요합니다."],
     [evidenceList.some((item) => item.proves || item.description), "증거와 사건 내용의 연결이 필요합니다."],
@@ -1909,9 +1909,9 @@ function setupFieldHelpers() {
     relationship: "예: 중고거래 상대, 전 직장동료, 전 연인, 모르는 사람",
     accusedAddress: "주소, 직장, 차량번호처럼 상대방을 찾는 데 도움이 되는 내용을 적어주세요.",
     accusedClue: "계좌번호, 닉네임, 프로필 링크처럼 작은 단서도 괜찮습니다.",
-    incidentDateInput: "정확한 날짜를 모르면 아래 사건 설명에 '2026년 6월 초순경'처럼 적어도 됩니다.",
+    incidentDateInput: "정확한 날짜를 모르면 피해사실에 '2026년 6월 초순경'처럼 적어도 됩니다.",
     incidentPlace: "온라인 사건이면 앱 이름, 단체방 이름, URL을 적어주세요.",
-    story: "시간순으로 적으면 좋습니다. 누가, 언제, 어디서, 무엇을 했는지만 적어도 됩니다.",
+    story: "피해사실을 시간순으로 적으면 좋습니다. 누가, 언제, 어디서, 무엇을 했고 어떤 피해가 생겼는지만 적어도 됩니다.",
     damage: "돈, 치료기간, 수리비, 영업손실처럼 확인 가능한 피해를 적어주세요.",
     damageDetail: "피해가 생활에 어떤 영향을 줬는지도 적으면 도움이 됩니다.",
     evidence: "증거 종류는 위 버튼이나 증거 카드로 정리할 수 있습니다.",
@@ -2097,7 +2097,7 @@ function getCompletionChecks(data) {
     { ok: [data.accused, data.accusedContact, data.accusedAddress, data.accusedClue].some((value) => String(value || "").trim()), text: "상대방 이름, 연락처, 계좌번호, 아이디 같은 단서" },
     { ok: Boolean(data.incidentDate), text: "사건 날짜" },
     { ok: Boolean(data.incidentPlace), text: "사건 장소나 플랫폼" },
-    { ok: Boolean(data.story), text: "상대방의 구체적인 행동" },
+    { ok: Boolean(data.story), text: "피해사실과 상대방의 구체적인 행동" },
     { ok: Boolean(data.damage || data.damageDetail), text: "피해 내용" },
     { ok: Boolean(evidenceList.length), text: "증거자료" },
     { ok: evidenceList.some((item) => item.proves || item.description), text: "증거가 보여주는 내용" },
