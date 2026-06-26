@@ -28,7 +28,7 @@ export async function onRequestPost({ request, env }) {
     return json({
       usedAi: false,
       draftText: buildComplaintDraft(payload),
-      missingInfo: findMissingInfo(payload),
+      missingInfo: buildHelpfulChecklist(payload),
       precedentQueries: buildPrecedentQueries(payload),
     });
   }
@@ -38,7 +38,7 @@ export async function onRequestPost({ request, env }) {
     return json({
       usedAi: true,
       draftText: buildComplaintDraft(payload, result),
-      missingInfo: result.missingInfo || findMissingInfo(payload),
+      missingInfo: buildHelpfulChecklist(payload, result.missingInfo),
       precedentQueries: result.precedentQueries || buildPrecedentQueries(payload),
     });
   } catch (error) {
@@ -46,7 +46,7 @@ export async function onRequestPost({ request, env }) {
       usedAi: false,
       message: `초안 정리에 실패했습니다: ${error.message}`,
       draftText: buildComplaintDraft(payload),
-      missingInfo: findMissingInfo(payload),
+      missingInfo: buildHelpfulChecklist(payload),
       precedentQueries: buildPrecedentQueries(payload),
     });
   }
@@ -344,6 +344,26 @@ function splitEvidence(value) {
     .split(/[,，、\/\n]/u)
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function buildHelpfulChecklist(payload, aiMissingInfo = []) {
+  const baseMissing = Array.isArray(aiMissingInfo) && aiMissingInfo.length
+    ? aiMissingInfo
+    : findMissingInfo(payload);
+  const items = baseMissing.map((item) => item.startsWith("현재 ") ? item : `보완 필요: ${item}`);
+  const checked = Array.isArray(payload.checkedQuestions) ? payload.checkedQuestions : [];
+
+  if (payload.caseTypeName) {
+    items.push(`${payload.caseTypeName} 핵심 확인: ${getCaseTypeRequirements(payload).join(" / ")}`);
+  }
+
+  if (checked.length) {
+    items.push(`범죄사실에 반영될 보강 사실: ${checked.join(" / ")}`);
+  } else {
+    items.push("보강 체크: 확실히 설명할 수 있는 항목만 체크하면 범죄사실에 반영됩니다.");
+  }
+
+  return items;
 }
 
 function findMissingInfo(payload) {

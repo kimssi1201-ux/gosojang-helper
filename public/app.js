@@ -387,10 +387,29 @@ function splitEvidence(value) {
 }
 
 function localMeta() {
+  const payload = getPayload();
   return {
-    missingInfo: findMissingInfo(getPayload()),
+    missingInfo: buildHelpfulChecklist(payload),
     precedentQueries: buildPrecedentQueries(getSelectedType()),
   };
+}
+
+function buildHelpfulChecklist(data) {
+  const missing = findMissingInfo(data);
+  const items = missing.map((item) => item.startsWith("현재 ") ? item : `보완 필요: ${item}`);
+  const checked = Array.isArray(data.checkedQuestions) ? data.checkedQuestions : [];
+
+  if (data.caseTypeName) {
+    items.push(`${data.caseTypeName} 핵심 확인: ${getCaseTypeRequirements(data).join(" / ")}`);
+  }
+
+  if (checked.length) {
+    items.push(`범죄사실에 반영될 보강 사실: ${checked.join(" / ")}`);
+  } else {
+    items.push("보강 체크: 확실히 설명할 수 있는 항목만 체크하면 범죄사실에 반영됩니다.");
+  }
+
+  return items;
 }
 
 function findMissingInfo(data) {
@@ -600,7 +619,7 @@ function downloadTxt() {
 function setLoading(isLoading) {
   controls.generate.disabled = isLoading;
   if (controls.template) controls.template.disabled = isLoading;
-  controls.generate.textContent = isLoading ? "생성 중" : "초안 생성";
+  controls.generate.textContent = isLoading ? "작성 중" : "고소장 만들기";
 }
 
 function valueOr(value, fallback) {
