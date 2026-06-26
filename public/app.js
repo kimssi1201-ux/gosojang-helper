@@ -126,20 +126,25 @@ function renderCaseTypes() {
   }
 }
 
-function renderQuestions(checkedQuestions = []) {
+function renderQuestions(savedAnswers = []) {
+  const saved = Array.isArray(savedAnswers) ? savedAnswers : [];
   questions.innerHTML = "";
-  for (const text of getSelectedType().questions || []) {
+  for (const [index, text] of (getSelectedType().questions || []).entries()) {
+    const savedItem = saved.find((item) => item?.question === text || item?.index === index || item === text);
     const item = document.createElement("label");
-    item.className = "question-item";
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.value = text;
-    checkbox.checked = checkedQuestions.includes(text);
+    item.className = "question-item question-answer-item";
     const span = document.createElement("span");
     span.textContent = text;
-    item.append(checkbox, span);
+    const textarea = document.createElement("textarea");
+    textarea.rows = 2;
+    textarea.dataset.questionIndex = String(index);
+    textarea.dataset.question = text;
+    textarea.placeholder = "여기에 답변을 적어주세요. 모르면 비워도 됩니다.";
+    textarea.value = typeof savedItem === "string" ? "" : savedItem?.answer || "";
+    item.append(span, textarea);
     questions.append(item);
   }
+  autoResizeTextareas();
 }
 
 function getDraftApiUrl() {
@@ -652,7 +657,7 @@ function renderPrecedents(items) {
 }
 
 function getCheckedQuestions() {
-  return [...questions.querySelectorAll('input[type="checkbox"]:checked')].map((input) => input.value);
+  return getQuestionAnswers().filter((item) => item.answer).map((item) => item.question);
 }
 
 function saveDraft() {
