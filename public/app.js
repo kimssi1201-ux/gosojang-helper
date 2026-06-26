@@ -963,12 +963,13 @@ var generateCrimeFacts = function (input) {
 
 buildFactSection = function (data, evidenceList) {
   const elements = mapElementsByCrimeType(data.caseTypeId, data);
+  const timePlace = buildTimePlaceSentence(data);
   return [
     "가. 피고소인 특정",
     buildAccusedSpecificLine(data),
     "",
     "나. 범행 일시 및 장소",
-    `피고소인은 ${normalizeUnknown(data.incidentDate)} ${normalizeUnknown(data.incidentPlace)}에서 또는 그 무렵 이 사건 행위를 하였습니다. 정확한 일시와 장소가 일부 불명확한 부분은 현재 확인 가능한 자료 기준으로 작성하였고, 추후 증거자료로 보완할 예정입니다.`,
+    timePlace,
     "",
     "다. 범행 방법 및 구체적 행위",
     buildActionParagraph(data, elements),
@@ -994,25 +995,41 @@ function buildAccusedSpecificLine(data) {
 }
 
 function buildActionParagraph(data, elements) {
-  const story = normalizeUnknown(compactText([data.story, data.actDetail], "\n"));
+  const story = compactText([data.story, data.actDetail], "\n");
   const answers = formatQuestionAnswers(data);
-  const typeLine = getTypeActionGuide(data.caseTypeId, elements);
-  return [typeLine, story, answers].filter(Boolean).join("\n");
+  const lines = [story, answers].filter(Boolean);
+  return lines.length ? lines.join("\n") : "피고소인의 구체적 행위는 추후 확인 필요합니다.";
 }
 
 function buildDamageParagraph(data, elements) {
   const damage = compactText([data.damage, data.damageDetail], " / ");
-  const typeDamage = elements.damagePoint ? `${elements.damagePoint}` : "";
-  return `그 결과 고소인은 ${normalizeUnknown(damage)}의 피해를 입었습니다.${typeDamage ? ` ${typeDamage}` : ""} 피해 금액, 치료 기간, 수리비, 영업 손실 등은 현재 확인 가능한 자료 기준으로 기재하고, 부족한 부분은 추후 확인 필요합니다.`;
+  return damage
+    ? `그 결과 고소인은 ${damage}의 피해를 입었습니다.`
+    : "그 결과 발생한 구체적인 피해 내용과 피해 정도는 추후 확인 필요합니다.";
 }
 
 function buildEvidenceConnection(data, evidenceList, elements) {
   if (!evidenceList.length) {
-    return `현재 증거자료는 추후 확인 필요합니다. ${elements.evidenceGuide || "대화내역, 사진, 녹취, 계좌내역, CCTV, 진단서 등 범죄사실을 뒷받침할 자료를 정리해야 합니다."}`;
+    return "현재 제출 예정 증거자료는 기재되지 않았습니다. 범죄사실을 뒷받침할 자료는 추후 확인 필요합니다.";
   }
   return evidenceList
-    .map((item, index) => `${index + 1}. ${item.title}: ${valueOr(item.description, elements.evidenceGuide || "범죄사실 관련 자료")} 이 자료는 ${valueOr(item.proves, "피고소인의 행위, 피해 발생, 증거 연결 관계")} 확인에 필요한 자료입니다.`)
+    .map((item, index) => `${index + 1}. ${item.title}: ${valueOr(item.description, "위 범죄사실 관련 자료")} 위 자료로 확인되는 내용은 ${valueOr(item.proves, "피고소인의 행위 및 피해 발생 경위")}입니다.`)
     .join("\n");
+}
+
+function buildTimePlaceSentence(data) {
+  const date = normalizeUnknown(data.incidentDate);
+  const place = normalizeUnknown(data.incidentPlace);
+  if (date !== "추후 확인 필요" && place !== "추후 확인 필요") {
+    return `피고소인은 ${date} ${place}에서 아래와 같은 행위를 하였습니다.`;
+  }
+  if (date !== "추후 확인 필요") {
+    return `피고소인은 ${date} 장소 불상지 또는 추후 확인되는 장소에서 아래와 같은 행위를 하였습니다.`;
+  }
+  if (place !== "추후 확인 필요") {
+    return `피고소인은 정확한 일시를 알 수 없는 때에 ${place}에서 아래와 같은 행위를 하였습니다.`;
+  }
+  return "범행 일시와 장소는 현재 자료만으로 특정하기 어려우며, 추후 확인 필요합니다.";
 }
 
 function getTypeActionGuide(caseTypeId, elements) {
@@ -1077,7 +1094,11 @@ function getQuestionAnswersFromPayload(data) {
 function formatQuestionAnswers(data) {
   const answers = getQuestionAnswersFromPayload(data).filter((item) => item.answer);
   if (!answers.length) return "";
-  return ["유형별 핵심 질문 답변", ...answers.map((item) => `- ${item.question}: ${item.answer}`)].join("\n");
+  return ["고소인은 추가로 다음과 같이 진술합니다.", ...answers.map((item, index) => `${index + 1}) ${trimQuestion(item.question)}: ${item.answer}`)].join("\n");
+}
+
+function trimQuestion(value) {
+  return String(value || "").replace(/[?？]\s*$/u, "").trim();
 }
 
 var normalizeUnknown = function (value) {
