@@ -34,12 +34,13 @@
 
     <main class="workspace">
       <section id="write" class="input-pane" aria-label="사건 입력">
-        <p class="simple-notice">입력한 내용을 바탕으로 고소장 초안을 만듭니다. 법률 자문은 아닙니다.</p>
+        <p class="simple-notice safety-notice">본 서비스는 고소장 초안 작성을 돕는 도구이며, 변호사의 법률 자문을 대신하지 않습니다. 허위 사실을 고의로 신고할 경우 형사상 책임이 문제될 수 있으므로, 확인 가능한 사실과 증거를 중심으로 작성해야 합니다.</p>
 
-        <div class="step-row"><span class="step-badge">1</span><h2>범죄유형</h2></div>
+        <div class="step-row"><span class="step-badge">1</span><h2>범죄유형 선택</h2></div>
+        <p class="step-help">유형을 고르면 그 사건에 필요한 질문이 자동으로 바뀝니다.</p>
         <div id="caseTypeGrid" class="case-type-grid"></div>
 
-        <div class="step-row"><span class="step-badge">2</span><h2>기본 정보</h2></div>
+        <div class="step-row"><span class="step-badge">2</span><h2>고소인 / 피고소인 정보</h2></div>
         <p class="simple-notice">주민등록번호는 민감정보라 사이트에서 입력받지 않습니다. 제출 전 고소장에 직접 적으세요.</p>
         <form id="complaintForm" class="form-grid">
           <div class="inline-field-row">
@@ -52,19 +53,36 @@
             <label>연락처/계정<input name="accusedContact" placeholder="예: 전화번호, 카카오톡 ID, 계정명" autocomplete="off" /></label>
           </div>
           <label>피고소인 주소/단서<input name="accusedAddress" placeholder="예: 주소, 직장, 차량번호, 계정 단서" autocomplete="off" /></label>
+          <label>특정 단서<input name="accusedClue" placeholder="예: 계좌번호, 닉네임, 차량번호, 프로필 링크" autocomplete="off" /></label>
+
+          <div class="step-divider full-width"><span>Step 3</span><strong>사건 일시 / 장소 / 경위</strong><p>일시와 장소는 범죄사실을 특정하는 핵심입니다. 정확히 모르면 가능한 범위를 적어주세요.</p></div>
           <label>사건 일시<input name="incidentDateInput" type="datetime-local" /><input name="incidentDate" type="hidden" /></label>
           <label>사건 장소<input name="incidentPlace" placeholder="예: 서울 강남구 소재 사무실" /></label>
+          <label class="full-width">피고소인의 구체적 행위<textarea name="actDetail" rows="3" placeholder="실제로 한 말, 보낸 메시지, 받은 돈, 때린 부위, 올린 게시글처럼 행동을 구체적으로 적어주세요."></textarea></label>
+          <label class="full-width">사건 설명<textarea name="story" rows="7" placeholder="언제, 어디서, 누가, 어떤 말이나 행동을 했고, 어떤 피해가 발생했는지 시간순으로 적어주세요."></textarea></label>
+
+          <div class="step-divider full-width"><span>Step 5</span><strong>피해 내용</strong><p>피해금액, 치료기간, 수리비, 영업손실처럼 확인 가능한 피해를 적어주세요.</p></div>
           <label>피해금액 또는 피해내용<input name="damage" placeholder="예: 500만원 / 전치 2주 상해" /></label>
+          <label>피해 정도<input name="damageDetail" placeholder="예: 치료 2주, 수리비 80만원, 영업 중단 3시간" /></label>
+
+          <div class="step-divider full-width"><span>Step 6</span><strong>증거자료 정리</strong><p>파일명만 쓰지 말고, 그 증거가 무엇을 입증하는지 함께 적어주세요.</p></div>
           <label>증거자료<input name="evidence" placeholder="예: 문자, 계좌이체내역, 녹취, CCTV" /></label>
+          <label>증거 설명<input name="evidenceDescription" placeholder="예: 계좌이체내역은 50만원 송금 사실을 입증" /></label>
+          <label>관련 사건 여부<input name="relatedCase" placeholder="예: 112 신고 있음 / 민사소송 없음 / 확인 필요" /></label>
+          <label>처벌 의사<input name="punishmentIntent" placeholder="예: 피고소인의 처벌을 원합니다" /></label>
           <label class="full-width photo-field">사진 첨부<input id="photoInput" type="file" accept="image/*" multiple /></label>
           <button id="clearPhotoBtn" class="ghost-button photo-clear-button" type="button" hidden>사진 지우기</button>
           <div id="photoPreview" class="photo-preview full-width" hidden></div>
-          <label class="full-width">사건 설명<textarea name="story" rows="8" placeholder="언제, 어디서, 누가, 어떤 말이나 행동을 했고, 어떤 피해가 발생했는지 시간순으로 적어주세요."></textarea></label>
         </form>
 
-        <p class="simple-notice"><strong>범죄사실 보강 체크</strong><br />체크한 내용은 고소장 초안의 범죄사실과 누락 체크에 반영됩니다. 확실히 설명할 수 있는 내용만 체크하세요.</p>
+        <div class="step-row"><span class="step-badge">4</span><h2>범죄유형별 핵심 질문</h2></div>
+        <p class="simple-notice"><strong>범죄사실 보강 질문</strong><br />아는 내용만 적으세요. 답변한 내용은 고소장 초안의 범죄사실과 누락 체크에 직접 반영됩니다.</p>
         <div id="dynamicQuestions" class="question-box"></div>
 
+        <div class="step-row"><span class="step-badge">7</span><h2>누락 체크</h2></div>
+        <p class="step-help">초안을 만들면 부족한 항목을 아래 미리보기의 누락 체크에서 보여줍니다.</p>
+
+        <div class="step-row"><span class="step-badge">8</span><h2>고소장 초안 생성</h2></div>
         <div class="action-row">
           <button id="generateBtn" class="primary-button wide" type="button">고소장 만들기</button>
           <button id="templateBtn" class="secondary-button" type="button" hidden>템플릿 초안</button>
@@ -78,6 +96,7 @@
           <div class="preview-actions">
             <button id="saveDraftBtn" class="ghost-button" type="button">저장</button>
             <button id="loadDraftBtn" class="ghost-button" type="button">불러오기</button>
+            <button id="copyDraftBtn" class="ghost-button" type="button">복사</button>
             <button id="kakaoShareBtn" class="ghost-button kakao-button" type="button">카카오톡</button>
             <button id="downloadTxtBtn" class="ghost-button" type="button">TXT</button>
             <button id="printBtn" class="ghost-button" type="button">인쇄/PDF 저장</button>
