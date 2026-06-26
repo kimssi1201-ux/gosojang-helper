@@ -885,7 +885,7 @@ getPayload = function () {
 buildComplaintDraft = function (data, ai = {}) {
   const today = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
   const evidenceList = buildEvidenceList(data);
-  const facts = normalizeFactSection(ai.facts) || generateCrimeFacts(data);
+  const facts = generateCrimeFacts(data);
   const accusedClue = compactText([data.accusedContact, data.accusedAddress, data.accusedClue], " / ");
 
   return [

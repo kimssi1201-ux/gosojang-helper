@@ -591,7 +591,7 @@ function json(body, status = 200) {
 buildComplaintDraft = function (payload, ai = {}) {
   const today = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
   const evidenceList = buildEvidenceList(payload);
-  const facts = normalizeFactSection(ai.facts) || generateCrimeFacts(payload);
+  const facts = generateCrimeFacts(payload);
   const accusedClue = compactText([payload.accusedContact, payload.accusedAddress, payload.accusedClue], " / ");
 
   return [
