@@ -1017,7 +1017,7 @@ function buildEvidenceConnection(data, evidenceList, elements) {
     .join("\n");
 }
 
-function buildTimePlaceSentence(data) {
+buildTimePlaceSentence = function (data) {
   const date = normalizeUnknown(data.incidentDate);
   const place = normalizeUnknown(data.incidentPlace);
   if (date !== "추후 확인 필요" && place !== "추후 확인 필요") {
@@ -1326,4 +1326,531 @@ function compactText(values, separator) {
   return values.map((value) => String(value || "").trim()).filter(Boolean).join(separator);
 }
 
-init();
+const easyCaseCopy = {
+  fraud: ["돈을 보냈는데 약속을 지키지 않았어요", "사기 사건에 가까울 수 있습니다."],
+  embezzlement: ["맡겨둔 돈이나 물건을 돌려주지 않아요", "횡령 사건에 가까울 수 있습니다."],
+  breach: ["맡은 일을 어겨 손해가 생겼어요", "배임 사건에 가까울 수 있습니다."],
+  defamation: ["인터넷이나 단톡방에 나에 대한 나쁜 말을 올렸어요", "명예훼손 사건에 가까울 수 있습니다."],
+  insult: ["욕설이나 모욕적인 말을 들었어요", "모욕 사건에 가까울 수 있습니다."],
+  threat: ["협박을 받았어요", "협박 사건에 가까울 수 있습니다."],
+  extortion: ["협박 때문에 돈이나 물건을 줬어요", "공갈 사건에 가까울 수 있습니다."],
+  assault: ["맞거나 밀치는 피해를 당했어요", "폭행 사건에 가까울 수 있습니다."],
+  injury: ["다쳐서 병원 치료를 받았어요", "상해 사건에 가까울 수 있습니다."],
+  property_damage: ["물건이 부서졌어요", "재물손괴 사건에 가까울 수 있습니다."],
+  business: ["가게나 업무를 방해받았어요", "업무방해 사건에 가까울 수 있습니다."],
+  stalking: ["계속 연락하거나 찾아와서 불안해요", "스토킹 사건에 가까울 수 있습니다."],
+  trespass: ["집이나 사무실에 허락 없이 들어왔어요", "주거침입 사건에 가까울 수 있습니다."],
+  cyber: ["온라인에서 사기나 계정 피해를 당했어요", "사이버범죄 사건에 가까울 수 있습니다."],
+  other: ["잘 모르겠어요", "일단 사실관계 중심으로 정리합니다."],
+};
+
+const evidenceTypeOptions = ["카카오톡 대화", "문자 메시지", "통화 녹음", "계좌이체 내역", "계약서", "게시글 캡처", "URL", "CCTV", "블랙박스", "사진", "진단서", "견적서", "목격자", "기타"];
+
+renderCaseTypes = function () {
+  grid.innerHTML = "";
+  for (const item of caseTypes) {
+    const copy = easyCaseCopy[item.id] || [item.name, item.summary];
+    const button = document.createElement("button");
+    button.className = "case-card";
+    button.type = "button";
+    button.setAttribute("aria-pressed", String(item.id === selectedCaseType));
+    button.innerHTML = `<strong>${escapeHtml(copy[0])}</strong><p>${escapeHtml(item.summary || "")}</p><span class="case-hint">${escapeHtml(copy[1])}</span>`;
+    button.addEventListener("click", () => {
+      selectedCaseType = item.id;
+      renderCaseTypes();
+      renderQuestions();
+      updateEventSummary();
+      syncDraftFromInputs();
+      autoSave();
+    });
+    grid.append(button);
+  }
+};
+
+renderQuestions = function (savedAnswers = []) {
+  const saved = Array.isArray(savedAnswers) ? savedAnswers : [];
+  questions.innerHTML = "";
+  for (const [index, text] of (getSelectedType().questions || []).entries()) {
+    const savedItem = saved.find((item) => item?.question === text || item?.index === index || item === text);
+    const item = document.createElement("div");
+    item.className = "question-item question-answer-item";
+    const title = document.createElement("span");
+    title.textContent = text;
+    const textarea = document.createElement("textarea");
+    textarea.rows = 2;
+    textarea.dataset.questionIndex = String(index);
+    textarea.dataset.question = text;
+    textarea.dataset.status = savedItem?.status || "";
+    textarea.placeholder = "답을 적어주세요. 모르면 아래 버튼을 눌러도 됩니다.";
+    textarea.value = typeof savedItem === "string" ? "" : savedItem?.answer || "";
+    const status = document.createElement("div");
+    status.className = "answer-status";
+    status.textContent = textarea.dataset.status ? `표시: ${textarea.dataset.status}` : "";
+    const actions = document.createElement("div");
+    actions.className = "question-actions";
+    [
+      ["잘 모르겠어요", "추후 확인 필요", "잘 모르겠어요"],
+      ["나중에 입력할게요", "", "나중에 입력"],
+      ["해당 없어요", "해당 없음", "해당 없음"],
+    ].forEach(([label, value, state]) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = label;
+      button.addEventListener("click", () => {
+        textarea.value = value;
+        textarea.dataset.status = state;
+        status.textContent = `표시: ${state}`;
+        autoResizeTextareas(textarea);
+        syncDraftFromInputs();
+        autoSave();
+      });
+      actions.append(button);
+    });
+    item.append(title, textarea, actions, status);
+    questions.append(item);
+  }
+  autoResizeTextareas();
+};
+
+getPayload = function () {
+  syncEvidenceTextFields();
+  const data = Object.fromEntries(new FormData(form).entries());
+  const type = getSelectedType();
+  const questionAnswers = getQuestionAnswers();
+  return {
+    ...data,
+    mode: document.body.dataset.mode || "guided",
+    caseTypeId: type.id,
+    caseTypeName: type.name,
+    easyCaseTitle: easyCaseCopy[type.id]?.[0] || type.name,
+    lawKeywords: type.lawKeywords || [],
+    questions: type.questions || [],
+    questionAnswers,
+    checkedQuestions: questionAnswers.filter((item) => item.answer).map((item) => item.question),
+    evidenceTypes: getSelectedEvidenceTypes(),
+    evidenceCards: getEvidenceCards(),
+  };
+};
+
+buildComplaintDraft = function (data, ai = {}) {
+  const today = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
+  const evidenceList = buildEvidenceList(data);
+  const facts = generateCrimeFacts(data);
+  const accusedClue = compactText([data.accusedContact, data.accusedAddress, data.accusedClue], " / ");
+
+  return [
+    "[고소장]",
+    "",
+    "1. 고소인",
+    `성명: ${valueOr(data.complainant, "[고소인 성명]")}`,
+    `주소: ${valueOr(data.complainantAddress, "[고소인 주소]")}`,
+    `연락처: ${valueOr(data.complainantPhone, "[고소인 연락처]")}`,
+    "",
+    "2. 피고소인",
+    `성명: ${valueOr(data.accused, "성명불상자")}`,
+    `주소: ${valueOr(data.accusedAddress, "추후 확인 필요")}`,
+    `연락처 또는 특정 단서: ${valueOr(accusedClue, "추후 확인 필요")}`,
+    `고소인과의 관계: ${valueOr(data.relationship, "추후 확인 필요")}`,
+    "",
+    "3. 고소취지",
+    ai.purpose || buildPurpose(data),
+    "",
+    "4. 범죄사실",
+    facts,
+    "",
+    "5. 고소이유",
+    ai.reason || buildReasonSection(data, evidenceList),
+    "",
+    "6. 증거자료",
+    ai.evidence || formatEvidenceList(evidenceList),
+    "",
+    "7. 참고사항",
+    valueOr(data.relatedCase, "관련 신고, 고소, 민사소송, 합의 또는 변제 여부는 추후 확인 필요"),
+    "",
+    "8. 첨부자료",
+    buildAttachmentList(evidenceList.map((item) => item.title)),
+    "",
+    "9. 작성일",
+    today,
+    "",
+    "10. 고소인",
+    `성명: ${valueOr(data.complainant, "[고소인 성명]")}`,
+    "서명 또는 날인: ____________________",
+    "",
+    "제출 전 확인사항",
+    buildCautions(data, evidenceList),
+    "",
+    "안내: 이 문서는 입력한 내용을 고소장 초안 형식으로 정리한 것입니다. 실제 제출 전 사실관계, 증거자료, 관할 수사기관, 서명 또는 날인을 반드시 확인하세요.",
+  ].join("\n");
+};
+
+normalizeFactSection = function (value) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  const required = ["가. 사건의 시작", "나. 피고소인의 구체적인 행위", "다. 고소인이 믿고 한 행동 또는 피해 발생 과정", "라. 피해 결과", "마. 증거자료와 확인 가능한 사실"];
+  return required.every((title) => text.includes(title)) ? text : "";
+};
+
+buildPurpose = function (data) {
+  if (data.caseTypeId === "other") {
+    return "고소인은 아래 피해 사실에 관하여 피고소인을 수사하여 처벌하여 주시기 바랍니다.";
+  }
+  return `고소인은 피고소인을 ${valueOr(data.caseTypeName, "관련 범죄")} 혐의 등으로 고소하오니, 아래 사실을 수사하여 처벌하여 주시기 바랍니다.`;
+};
+
+buildFactSection = function (data, evidenceList) {
+  return [
+    "가. 사건의 시작",
+    buildStartParagraph(data),
+    "",
+    "나. 피고소인의 구체적인 행위",
+    buildActionParagraph(data),
+    "",
+    "다. 고소인이 믿고 한 행동 또는 피해 발생 과정",
+    buildProcessParagraph(data),
+    "",
+    "라. 피해 결과",
+    buildDamageParagraph(data),
+    "",
+    "마. 증거자료와 확인 가능한 사실",
+    buildEvidenceConnection(data, evidenceList),
+  ].join("\n");
+};
+
+function buildStartParagraph(data) {
+  const relation = valueOr(data.relationship, "추후 확인 필요");
+  const timePlace = buildTimePlaceSentence(data);
+  const accusedLine = buildAccusedSpecificLine(data);
+  return `${accusedLine}\n고소인과 피고소인의 관계는 ${relation}입니다. ${timePlace}`;
+}
+
+function buildProcessParagraph(data) {
+  const byType = {
+    fraud: "고소인은 위와 같은 말이나 자료를 믿고 돈, 물건 또는 재산상 이익을 제공하였거나 제공하려 하였으며, 이후 약속이 이행되지 않아 피해가 발생하였습니다.",
+    embezzlement: "고소인은 피고소인에게 돈이나 물건을 맡기거나 관리하게 하였으나, 피고소인이 반환 또는 정산을 하지 않아 피해가 발생하였습니다.",
+    defamation: "문제된 말이나 게시물로 고소인의 신원이 특정될 수 있고, 이를 본 사람들에게 고소인의 사회적 평가가 낮아질 수 있는 피해가 발생하였습니다.",
+    insult: "문제된 욕설이나 모욕적 표현으로 고소인은 정신적 고통을 겪었고, 그 표현이 전달된 상황과 범위는 수사 과정에서 확인이 필요합니다.",
+    assault: "피고소인의 신체 접촉 또는 폭력적 행위로 고소인에게 신체적 고통과 피해가 발생하였습니다.",
+    injury: "피고소인의 행위로 고소인에게 상처나 치료가 필요한 피해가 발생하였습니다.",
+    stalking: "고소인은 피고소인의 반복적인 연락, 접근 또는 감시 등으로 불안감과 생활상 피해를 겪었습니다.",
+    business: "피고소인의 행위로 고소인의 정상적인 영업 또는 업무 진행이 방해되었습니다.",
+    cyber: "온라인 사이트, 앱, 계정 또는 결제 과정에서 고소인에게 피해가 발생하였습니다.",
+  };
+  return byType[data.caseTypeId] || "고소인은 위 행위로 인해 형사상 피해를 입었다고 보아 이 고소장을 제출합니다.";
+}
+
+function buildTimePlaceSentence(data) {
+  const date = normalizeUnknown(data.incidentDate);
+  const place = normalizeUnknown(data.incidentPlace);
+  if (date !== "추후 확인 필요" && place !== "추후 확인 필요") return `사건은 ${date} ${place}에서 발생하였습니다.`;
+  if (date !== "추후 확인 필요") return `사건은 ${date} 발생하였고, 장소는 추후 확인 필요합니다.`;
+  if (place !== "추후 확인 필요") return `사건은 정확한 일시는 추후 확인 필요하나 ${place}에서 발생하였습니다.`;
+  return "사건 일시와 장소는 현재 자료만으로 특정하기 어려우며, 추후 확인 필요합니다.";
+};
+
+buildAccusedSpecificLine = function (data) {
+  const name = valueOr(data.accused, "성명불상자");
+  const clues = compactText([data.accusedContact, data.accusedAddress, data.accusedClue], ", ");
+  const base = clues ? `피고소인은 ${name}이며, 현재 확인 가능한 단서는 ${clues}입니다.` : `피고소인은 ${name}이며, 구체적인 인적사항은 추후 확인 필요합니다.`;
+  if (/성명불상|불상|미상|모름/u.test(name)) return `${base} 대화내역, 계좌정보, 계정명, 전화번호, CCTV, 플랫폼 기록 등으로 피고소인을 특정할 필요가 있습니다.`;
+  return base;
+};
+
+buildActionParagraph = function (data) {
+  const story = String(data.story || "").trim();
+  const answers = formatQuestionAnswers(data);
+  const lines = [story, answers].filter(Boolean);
+  return lines.length ? lines.join("\n") : "피고소인이 실제로 한 말이나 행동은 추후 확인 필요합니다.";
+};
+
+buildDamageParagraph = function (data) {
+  const damage = compactText([data.damage, data.damageDetail], " / ");
+  return damage ? `그 결과 고소인은 ${damage}의 피해를 입었습니다.` : "피해금액, 치료기간, 수리비, 영업손실 등 구체적인 피해 내용은 추후 확인 필요합니다.";
+};
+
+buildEvidenceConnection = function (data, evidenceList) {
+  if (!evidenceList.length) return "현재 제출 예정 증거자료는 기재되지 않았습니다. 범죄사실을 뒷받침할 자료는 추후 확인 필요합니다.";
+  return evidenceList.map((item, index) => {
+    const date = item.date ? `, 증거 날짜는 ${item.date}` : "";
+    const file = item.fileName ? `, 보관 위치 또는 파일명은 ${item.fileName}` : "";
+    return `${index + 1}. ${item.title}${date}${file}: ${valueOr(item.description, "사건 관련 자료")}입니다. 이 자료로 확인하려는 내용은 ${valueOr(item.proves, "피고소인의 행위, 피해 발생 경위 또는 피해 결과")}입니다.`;
+  }).join("\n");
+};
+
+getQuestionAnswers = function () {
+  return [...questions.querySelectorAll("textarea[data-question]")].map((textarea, index) => ({
+    index,
+    question: textarea.dataset.question || "",
+    answer: textarea.value.trim(),
+    status: textarea.dataset.status || "",
+  }));
+};
+
+formatQuestionAnswers = function (data) {
+  const answers = getQuestionAnswersFromPayload(data).filter((item) => item.answer && item.answer !== "해당 없음");
+  if (!answers.length) return "";
+  return ["추가로 확인된 내용은 다음과 같습니다.", ...answers.map((item, index) => `${index + 1}) ${trimQuestion(item.question)}: ${item.answer}`)].join("\n");
+};
+
+trimQuestion = function (value) {
+  return String(value || "").replace(/[?？.。]\s*$/u, "").trim();
+};
+
+buildEvidenceList = function (data) {
+  const cardItems = Array.isArray(data.evidenceCards) ? data.evidenceCards.filter((item) => item.title || item.description || item.proves || item.fileName) : [];
+  if (cardItems.length) {
+    return cardItems.map((item, index) => ({
+      title: item.title || `증거자료 ${index + 1}`,
+      date: item.date || "",
+      description: item.description || "",
+      proves: item.proves || inferEvidenceProves(data.caseTypeId, item.title || "", item.description || ""),
+      step: item.step || "",
+      fileName: item.fileName || "",
+    }));
+  }
+  const titles = splitEvidence(data.evidence || (Array.isArray(data.evidenceTypes) ? data.evidenceTypes.join(", ") : ""));
+  const descriptions = String(data.evidenceDescription || "").split(/\n|;/u).map((item) => item.trim()).filter(Boolean);
+  if (!titles.length && !descriptions.length) return [];
+  const length = Math.max(titles.length, descriptions.length);
+  return Array.from({ length }, (_, index) => ({
+    title: titles[index] || `증거자료 ${index + 1}`,
+    date: "",
+    description: descriptions[index] || descriptions[0] || "",
+    proves: inferEvidenceProves(data.caseTypeId, titles[index] || "", descriptions[index] || ""),
+    fileName: "",
+  }));
+};
+
+var formatEvidenceList = function (evidenceList) {
+  if (!evidenceList.length) return "1) 증거명: 추후 확인 필요\n   입증하려는 사실: 피고소인의 행위, 피해 발생, 피해 결과를 보여주는 자료를 정리해야 합니다.";
+  return evidenceList.map((item, index) => [
+    `${index + 1}) 증거명: ${item.title}`,
+    `   증거 날짜: ${valueOr(item.date, "추후 확인 필요")}`,
+    `   증거 설명: ${valueOr(item.description, "추후 확인 필요")}`,
+    `   입증하려는 사실: ${valueOr(item.proves, "추후 확인 필요")}`,
+    item.fileName ? `   파일명 또는 보관 위치: ${item.fileName}` : "",
+  ].filter(Boolean).join("\n")).join("\n");
+};
+
+inferEvidenceProves = function (caseTypeId, title, description) {
+  const text = `${title} ${description}`;
+  if (/송금|계좌|이체|입금|결제/u.test(text)) return "돈을 보낸 사실, 피해금액, 상대방 계좌 정보";
+  if (/카카오|문자|대화|메시지|녹취|통화/u.test(text)) return "상대방이 한 말, 약속, 요구, 협박 또는 거부 의사 표시";
+  if (/캡처|URL|게시|댓글|화면/u.test(text)) return "게시 위치, 표현 원문, 온라인 피해 경로";
+  if (/진단|병원|치료|상처/u.test(text)) return "상처, 치료 기간, 병원 진료 내용";
+  if (/CCTV|블랙박스|목격/u.test(text)) return "현장 상황과 상대방의 행위";
+  const byType = {
+    fraud: "상대방의 약속, 돈을 보낸 사실, 약속 미이행",
+    defamation: "문제된 글의 원문, 게시 위치, 누가 볼 수 있었는지",
+    insult: "욕설 원문, 말한 장소, 들은 사람",
+    assault: "폭행 방법, 피해 부위, 현장 상황",
+    stalking: "반복 연락, 거부 의사, 불안감",
+  };
+  return byType[caseTypeId] || "사건 내용과 피해 결과";
+};
+
+buildHelpfulChecklist = function (data) {
+  const score = calculateCompletionScore(data);
+  const missing = findMissingInfo(data);
+  const items = [`고소장 완성도 ${score.score}점 - ${score.label}`];
+  items.push(...score.messages);
+  items.push(...missing.map((item) => item.startsWith("현재 ") ? item : `보완 필요: ${item}`));
+  const answered = getQuestionAnswersFromPayload(data).filter((item) => item.answer && item.answer !== "해당 없음").length;
+  items.push(answered ? `추가 질문 답변 ${answered}개가 범죄사실에 반영됩니다.` : "추가 질문 답변이 비어 있습니다. 아는 내용만 적으면 범죄사실이 더 구체화됩니다.");
+  return [...new Set(items)];
+};
+
+var checkMissingFields = function (data) {
+  const missing = [];
+  const evidenceList = buildEvidenceList(data);
+  const accusedKnown = [data.accused, data.accusedContact, data.accusedAddress, data.accusedClue].some((value) => String(value || "").trim());
+  [
+    [data.complainant, "고소인 이름을 입력하세요."],
+    [data.complainantPhone, "고소인 연락처를 입력하세요."],
+    [accusedKnown, "상대방 이름, 연락처, 계정, 계좌번호 등 아는 정보를 하나 이상 입력하세요."],
+    [data.incidentDate, "사건 날짜를 입력하세요. 정확히 모르면 대략적인 날짜라도 적으세요."],
+    [data.incidentPlace, "사건 장소나 플랫폼을 입력하세요."],
+    [data.story, "상대방이 실제로 한 말이나 행동을 적으세요."],
+    [data.damage || data.damageDetail, "피해금액, 치료기간, 수리비, 영업손실 등 피해 내용을 적으세요."],
+    [evidenceList.length, "증거자료를 하나 이상 정리하세요."],
+    [evidenceList.some((item) => item.proves || item.description), "증거가 무엇을 보여주는지 적으세요."],
+  ].forEach(([value, label]) => {
+    if (!value || !String(value).trim()) missing.push(label);
+  });
+  missing.push(...typeSpecificMissing(data));
+  return [...new Set(missing)];
+};
+
+function calculateCompletionScore(data) {
+  const evidenceList = buildEvidenceList(data);
+  const checks = [
+    [[data.accused, data.accusedContact, data.accusedAddress, data.accusedClue].some((value) => String(value || "").trim()), "상대방을 특정할 단서가 필요합니다."],
+    [data.incidentDate, "사건 날짜가 필요합니다."],
+    [data.incidentPlace, "사건 장소나 플랫폼이 필요합니다."],
+    [data.story, "상대방이 한 말이나 행동이 필요합니다."],
+    [data.damage || data.damageDetail, "피해 내용이 필요합니다."],
+    [evidenceList.length, "증거자료가 필요합니다."],
+    [evidenceList.some((item) => item.proves || item.description), "증거와 사건 내용의 연결이 필요합니다."],
+  ];
+  const passed = checks.filter(([value]) => Boolean(value && String(value).trim())).length;
+  const score = Math.round((passed / checks.length) * 100);
+  const label = score >= 80 ? "비교적 충분" : score >= 60 ? "일부 보완 필요" : "핵심 내용 부족";
+  const messages = checks.filter(([value]) => !Boolean(value && String(value).trim())).map(([, message]) => message);
+  return { score, label, messages };
+}
+
+typeSpecificMissing = function (data) {
+  const cardText = Array.isArray(data.evidenceCards) ? data.evidenceCards.map((item) => Object.values(item || {}).join(" ")).join(" ") : "";
+  const text = [data.story, data.damage, data.damageDetail, data.evidence, data.evidenceDescription, cardText, ...getQuestionAnswersFromPayload(data).map((item) => `${item.question} ${item.answer}`)].join(" ");
+  const groups = {
+    fraud: [["약속|설명|판매|투자|환불|배송", "사기: 상대방이 어떤 약속이나 설명을 했는지 더 적으면 좋습니다."], ["송금|이체|입금|결제|계좌|원|만원", "사기: 돈을 보낸 날짜, 금액, 방법을 더 적으면 좋습니다."], ["대화|캡처|계좌|판매글|계약|녹취", "사기: 약속 내용과 돈을 보낸 사실을 보여줄 증거를 적으면 좋습니다."]],
+    defamation: [["원문|게시|댓글|단체방|URL|캡처", "명예훼손: 문제된 글의 원문과 게시 위치를 적으면 좋습니다."], ["누가|사람|공개|단체방|조회|댓글", "명예훼손: 그 글을 볼 수 있었던 사람을 적으면 좋습니다."], ["내|고소인|실명|사진|계정|별명", "명예훼손: 그 글이 고소인에 대한 것이라고 알 수 있는 이유를 적으면 좋습니다."]],
+    insult: [["욕|말|원문|모욕|비하", "모욕: 상대방이 한 말을 그대로 적으면 좋습니다."], ["누가|사람|단체방|공개|앞에서", "모욕: 그 말을 들은 사람이나 볼 수 있었던 사람을 적으면 좋습니다."]],
+    assault: [["때리|밀|잡|차|폭행|부위|얼굴|팔|다리", "폭행: 어떤 방식으로 맞거나 밀렸는지와 피해 부위를 적으면 좋습니다."], ["CCTV|목격|사진|신고|112|영상", "폭행: 현장 증거 또는 신고 여부를 적으면 좋습니다."]],
+    injury: [["진단|치료|병원|상처|전치|골절|영수증", "상해: 병원명, 진단명, 치료 기간, 진단서 여부를 적으면 좋습니다."]],
+    embezzlement: [["맡|보관|관리|정산|반환|돌려", "횡령: 돈이나 물건을 맡기게 된 이유와 돌려받기로 한 내용을 적으면 좋습니다."], ["사용|거부|연락두절|반환", "횡령: 상대방이 돌려주지 않거나 마음대로 사용한 정황을 적으면 좋습니다."]],
+    stalking: [["반복|횟수|전화|문자|접근|기다|감시|방문", "스토킹: 반복된 연락이나 방문의 날짜와 횟수를 적으면 좋습니다."], ["그만|거부|연락하지|싫다", "스토킹: 그만하라고 말한 내용이 있으면 적으면 좋습니다."], ["불안|공포|두려|생활|무섭", "스토킹: 불안감이나 생활상 피해를 적으면 좋습니다."]],
+    business: [["업무|영업|가게|손님|매출|예약", "업무방해: 어떤 업무가 어떻게 방해됐는지 적으면 좋습니다."]],
+    cyber: [["URL|사이트|앱|계정|닉네임|이메일|전화", "사이버범죄: 사이트, 앱, URL, 계정명 등 단서를 적으면 좋습니다."]],
+  };
+  return (groups[data.caseTypeId] || []).filter(([pattern]) => !new RegExp(pattern, "u").test(text)).map(([, message]) => message);
+};
+
+function setupEasyFlowControls() {
+  document.querySelector("#guidedModeBtn")?.addEventListener("click", () => {
+    document.body.dataset.mode = "guided";
+    document.querySelector("#caseTypeGrid")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  document.querySelector("#freeModeBtn")?.addEventListener("click", () => {
+    document.body.dataset.mode = "free";
+    form.elements.story?.focus();
+  });
+  renderEvidenceTypes();
+  if (!document.querySelector(".evidence-card")) addEvidenceCard();
+  document.querySelector("#addEvidenceBtn")?.addEventListener("click", () => {
+    addEvidenceCard();
+    syncDraftFromInputs();
+    autoSave();
+  });
+  form.addEventListener("input", updateEventSummary);
+  form.addEventListener("change", updateEventSummary);
+  updateEventSummary();
+}
+
+function renderEvidenceTypes() {
+  const container = document.querySelector("#evidenceTypeGrid");
+  if (!container) return;
+  container.innerHTML = evidenceTypeOptions.map((type) => `<label class="evidence-chip"><input type="checkbox" value="${escapeHtml(type)}" />${escapeHtml(type)}</label>`).join("");
+  container.addEventListener("change", () => {
+    syncEvidenceTextFields();
+    syncDraftFromInputs();
+    autoSave();
+  });
+}
+
+function addEvidenceCard(data = {}) {
+  const list = document.querySelector("#evidenceCardList");
+  if (!list) return;
+  const card = document.createElement("section");
+  card.className = "evidence-card";
+  card.innerHTML = `
+    <div class="evidence-card-header"><strong>증거자료</strong><button class="ghost-button mini-button" type="button">삭제</button></div>
+    <div class="evidence-card-grid">
+      <label>증거 종류<input data-evidence-field="title" value="${escapeHtml(data.title || "")}" placeholder="예: 카카오톡 대화" /></label>
+      <label>증거 날짜<input data-evidence-field="date" value="${escapeHtml(data.date || "")}" placeholder="예: 2026년 6월 20일" /></label>
+      <label>관련 사건 단계<input data-evidence-field="step" value="${escapeHtml(data.step || "")}" placeholder="예: 송금 전 약속 / 폭행 직후" /></label>
+      <label>파일명 또는 보관 위치<input data-evidence-field="fileName" value="${escapeHtml(data.fileName || "")}" placeholder="예: KakaoTalk_20260620.png" /></label>
+      <label>증거 설명<textarea data-evidence-field="description" rows="2" placeholder="이 증거가 어떤 자료인지 적어주세요.">${escapeHtml(data.description || "")}</textarea></label>
+      <label>이 증거로 보여주고 싶은 내용<textarea data-evidence-field="proves" rows="2" placeholder="예: 상대방이 50만원을 받았고 물건을 보내겠다고 한 사실">${escapeHtml(data.proves || "")}</textarea></label>
+    </div>`;
+  card.querySelector("button")?.addEventListener("click", () => {
+    card.remove();
+    syncDraftFromInputs();
+    autoSave();
+  });
+  card.addEventListener("input", () => {
+    syncEvidenceTextFields();
+    autoResizeTextareas();
+  });
+  list.append(card);
+}
+
+function getSelectedEvidenceTypes() {
+  return [...document.querySelectorAll("#evidenceTypeGrid input:checked")].map((input) => input.value);
+}
+
+function getEvidenceCards() {
+  return [...document.querySelectorAll(".evidence-card")].map((card) => {
+    const item = {};
+    card.querySelectorAll("[data-evidence-field]").forEach((field) => {
+      item[field.dataset.evidenceField] = field.value.trim();
+    });
+    return item;
+  });
+}
+
+function syncEvidenceTextFields() {
+  if (!form?.elements) return;
+  const cards = getEvidenceCards();
+  const types = getSelectedEvidenceTypes();
+  const titles = [...types, ...cards.map((item) => item.title).filter(Boolean)];
+  const descriptions = cards.map((item) => [item.description, item.proves].filter(Boolean).join(" - ")).filter(Boolean);
+  if (titles.length && form.elements.evidence) form.elements.evidence.value = [...new Set(titles)].join(", ");
+  if (descriptions.length && form.elements.evidenceDescription) form.elements.evidenceDescription.value = descriptions.join("\n");
+}
+
+function updateEventSummary() {
+  const panel = document.querySelector("#eventSummaryPanel");
+  if (!panel || !form) return;
+  const data = Object.fromEntries(new FormData(form).entries());
+  const summary = extractEventInfo(data);
+  panel.hidden = false;
+  panel.innerHTML = `
+    <h3>입력하신 내용을 이렇게 이해했어요. 맞는지 확인해주세요.</h3>
+    <dl>
+      <dt>상대방</dt><dd>${escapeHtml(summary.accused)}</dd>
+      <dt>사건일</dt><dd>${escapeHtml(summary.date)}</dd>
+      <dt>장소</dt><dd>${escapeHtml(summary.place)}</dd>
+      <dt>주요 내용</dt><dd>${escapeHtml(summary.main)}</dd>
+      <dt>피해</dt><dd>${escapeHtml(summary.damage)}</dd>
+      <dt>증거</dt><dd>${escapeHtml(summary.evidence)}</dd>
+      <dt>더 확인할 내용</dt><dd>${escapeHtml(summary.missing)}</dd>
+    </dl>`;
+}
+
+function extractEventInfo(data) {
+  const missing = [];
+  if (!data.accused && !data.accusedContact && !data.accusedClue) missing.push("상대방 단서");
+  if (!data.incidentDate) missing.push("사건일");
+  if (!data.incidentPlace) missing.push("장소");
+  if (!data.damage && !data.damageDetail) missing.push("피해");
+  if (!data.evidence && !data.evidenceDescription) missing.push("증거");
+  return {
+    accused: compactText([data.accused, data.accusedContact, data.accusedClue], " / ") || "추후 확인 필요",
+    date: data.incidentDate || "추후 확인 필요",
+    place: data.incidentPlace || "추후 확인 필요",
+    main: String(data.story || "추후 확인 필요").slice(0, 120),
+    damage: compactText([data.damage, data.damageDetail], " / ") || "추후 확인 필요",
+    evidence: compactText([data.evidence, data.evidenceDescription], " / ") || "추후 확인 필요",
+    missing: missing.length ? missing.join(", ") : "현재 핵심 내용은 입력되어 있습니다.",
+  };
+}
+
+setFormValues = function (data) {
+  for (const element of form.elements) {
+    if (!element.name || data[element.name] === undefined) continue;
+    element.value = data[element.name];
+  }
+  if (Array.isArray(data.evidenceCards)) {
+    const list = document.querySelector("#evidenceCardList");
+    if (list) {
+      list.innerHTML = "";
+      data.evidenceCards.forEach((item) => addEvidenceCard(item));
+    }
+  }
+};
+
+init().then(() => {
+  setupEasyFlowControls();
+  syncDraftFromInputs();
+});

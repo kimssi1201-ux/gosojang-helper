@@ -62,14 +62,14 @@ async function callOpenAI(payload, env) {
         {
           role: "system",
           content:
-            "당신은 대한민국 형사 고소장 초안 작성 보조자입니다. 검찰 고소장 표준서식과 검찰사건사무규칙의 사건 접수 실무 흐름을 기준으로 문서를 정리합니다. 법률 자문, 유죄 단정, 과장, 없는 사실 창작은 금지합니다. 사용자가 입력한 사실만 바탕으로, 수사관이 바로 읽을 수 있게 일시, 장소, 상대방 특정, 행위, 피해, 증거 연결을 구체적으로 정리하세요. 모르는 정보는 단정하지 말고 [직접 기재] 또는 [확인 필요]로 남기세요. 판례 사건번호는 만들지 말고 공식 검색 키워드만 제안하세요.",
+            "당신은 대한민국 일반인을 위한 형사 고소장 초안 정리 도우미입니다. 사용자가 법률용어를 몰라도 제출 문서에 가까운 문장으로 정리합니다. 법률 자문, 유죄 단정, 과장, 없는 사실 창작은 금지합니다. 사용자가 입력한 사실만 바탕으로 일시, 장소, 상대방 특정, 구체적 행위, 피해, 증거 연결을 차분한 문서체로 작성하세요. 어려운 법률용어를 앞세우지 말고, 모르는 정보는 단정하지 말고 [확인 필요]로 남기세요. 판례 사건번호는 만들지 말고 공식 검색 키워드만 제안하세요.",
         },
         {
           role: "user",
           content: JSON.stringify(
             {
               instruction:
-                "아래 입력을 바탕으로 실제 제출용 고소장 초안을 작성하세요. 반드시 고소취지, 범죄사실, 고소이유, 증거자료, 별지 증거목록, 제출 전 확인사항을 작성합니다. 범죄사실은 payload.caseTypeId에 맞춰 완전히 다르게 구성하세요. 사기는 기망행위·착오·처분행위·피해금액, 폭행/상해는 폭행방법·부위·횟수·진단/치료, 협박/공갈은 해악고지 원문·공포심·요구내용, 명예훼손/모욕은 표현 원문·공연성·특정성, 횡령/배임은 보관자/업무상 지위·용도외 사용·손해액, 스토킹은 반복성·거부의사·불안감, 주거침입은 침입장소·허락 없음·퇴거거부, 사이버범죄는 URL/계정·접속경로·전자증거, 업무방해는 정상업무·위계/위력·업무중단/손해를 중심으로 작성하세요. payload.questionAnswers는 사용자가 범죄유형별 핵심 질문에 답한 내용입니다. 답변한 항목은 빠뜨리지 말고 범죄사실의 구체적 행위, 피해 결과, 증거 연결에 직접 반영하세요. 범죄사실은 다음 소제목을 빠짐없이 포함하세요: 가. 피고소인 특정 / 나. 범행 일시 및 장소 / 다. 범행 방법 및 구체적 행위 / 라. 피해 결과 / 마. 증거와의 연결. 범죄사실은 감정 표현 없이 사실 중심 문단으로 작성하고, 사용자가 적은 사건 설명을 시간순으로 풀어 쓰세요. 없는 내용은 만들지 말고 추후 확인 필요로 남기세요.",
+                "아래 입력을 바탕으로 고소장 초안을 작성하세요. 사용자가 체크하거나 답변한 내용은 빠뜨리지 말고 범죄사실, 피해 결과, 증거자료에 직접 반영하세요. 범죄사실은 다음 소제목을 반드시 포함하세요: 가. 사건의 시작 / 나. 피고소인의 구체적인 행위 / 다. 고소인이 믿고 한 행동 또는 피해 발생 과정 / 라. 피해 결과 / 마. 증거자료와 확인 가능한 사실. 사건 유형별로 초점을 달리하세요. 돈을 보낸 사건은 상대방의 약속, 믿은 이유, 송금일·금액·계좌, 약속 미이행, 증거를 중심으로 씁니다. 욕설·게시글 사건은 원문, 게시 위치, 볼 수 있었던 사람, 고소인에 대한 말이라고 알 수 있는 이유, 캡처를 중심으로 씁니다. 폭행·상해 사건은 맞은 방법, 부위, 횟수, 진단·치료, CCTV·목격자를 중심으로 씁니다. 스토킹 사건은 반복 연락·방문, 거부 의사, 불안감, 통화기록·문자를 중심으로 씁니다. 없는 내용은 만들지 말고 [확인 필요]로 남기세요.",
               caseTypeRequirements: getCaseTypeRequirements(payload),
               payload,
             },
@@ -924,6 +924,285 @@ buildHelpfulChecklist = function (payload, aiMissingInfo = []) {
   const answered = getQuestionAnswersFromPayload(payload).filter((item) => item.answer).length;
   items.push(answered ? `유형별 질문 답변 ${answered}개가 범죄사실에 반영됩니다.` : "유형별 질문 답변이 비어 있습니다. 아는 내용만 적으면 범죄사실이 더 구체화됩니다.");
   return items;
+};
+
+buildComplaintDraft = function (payload, ai = {}) {
+  const today = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
+  const evidenceList = buildEvidenceList(payload);
+  const facts = generateCrimeFacts(payload);
+  const accusedClue = compactText([payload.accusedContact, payload.accusedAddress, payload.accusedClue], " / ");
+
+  return [
+    "[고소장]",
+    "",
+    "1. 고소인",
+    `성명: ${valueOr(payload.complainant, "[고소인 성명]")}`,
+    `주소: ${valueOr(payload.complainantAddress, "[고소인 주소]")}`,
+    `연락처: ${valueOr(payload.complainantPhone, "[고소인 연락처]")}`,
+    "",
+    "2. 피고소인",
+    `성명: ${valueOr(payload.accused, "성명불상자")}`,
+    `주소: ${valueOr(payload.accusedAddress, "추후 확인 필요")}`,
+    `연락처 또는 특정 단서: ${valueOr(accusedClue, "추후 확인 필요")}`,
+    `고소인과의 관계: ${valueOr(payload.relationship, "추후 확인 필요")}`,
+    "",
+    "3. 고소취지",
+    ai.purpose || buildPurpose(payload),
+    "",
+    "4. 범죄사실",
+    facts,
+    "",
+    "5. 고소이유",
+    ai.reason || buildReasonSection(payload, evidenceList),
+    "",
+    "6. 증거자료",
+    ai.evidence || formatEvidenceList(evidenceList),
+    "",
+    "7. 참고사항",
+    valueOr(payload.relatedCase, "관련 신고, 고소, 민사소송, 합의 또는 변제 여부는 추후 확인 필요"),
+    "",
+    "8. 첨부자료",
+    buildAttachmentList(evidenceList.map((item) => item.title)),
+    "",
+    "9. 작성일",
+    today,
+    "",
+    "10. 고소인",
+    `성명: ${valueOr(payload.complainant, "[고소인 성명]")}`,
+    "서명 또는 날인: ____________________",
+    "",
+    "제출 전 확인사항",
+    buildCautions(payload, evidenceList),
+    "",
+    "안내: 이 문서는 입력한 내용을 고소장 초안 형식으로 정리한 것입니다. 실제 제출 전 사실관계, 증거자료, 관할 수사기관, 서명 또는 날인을 반드시 확인하세요.",
+  ].join("\n");
+};
+
+normalizeFactSection = function (value) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  const required = ["가. 사건의 시작", "나. 피고소인의 구체적인 행위", "다. 고소인이 믿고 한 행동 또는 피해 발생 과정", "라. 피해 결과", "마. 증거자료와 확인 가능한 사실"];
+  return required.every((title) => text.includes(title)) ? text : "";
+};
+
+buildPurpose = function (payload) {
+  if (payload.caseTypeId === "other") {
+    return "고소인은 아래 피해 사실에 관하여 피고소인을 수사하여 처벌하여 주시기 바랍니다.";
+  }
+  return `고소인은 피고소인을 ${valueOr(payload.caseTypeName, "관련 범죄")} 혐의 등으로 고소하오니, 아래 사실을 수사하여 처벌하여 주시기 바랍니다.`;
+};
+
+generateCrimeFacts = function (input) {
+  return buildFactSection(input, buildEvidenceList(input));
+};
+
+buildFactSection = function (payload, evidenceList) {
+  return [
+    "가. 사건의 시작",
+    buildStartParagraph(payload),
+    "",
+    "나. 피고소인의 구체적인 행위",
+    buildActionParagraph(payload),
+    "",
+    "다. 고소인이 믿고 한 행동 또는 피해 발생 과정",
+    buildProcessParagraph(payload),
+    "",
+    "라. 피해 결과",
+    buildDamageParagraph(payload),
+    "",
+    "마. 증거자료와 확인 가능한 사실",
+    buildEvidenceConnection(payload, evidenceList),
+  ].join("\n");
+};
+
+function buildStartParagraph(payload) {
+  const relation = valueOr(payload.relationship, "추후 확인 필요");
+  const timePlace = buildTimePlaceSentence(payload);
+  const accusedLine = buildAccusedSpecificLine(payload);
+  return `${accusedLine}\n고소인과 피고소인의 관계는 ${relation}입니다. ${timePlace}`;
+}
+
+function buildProcessParagraph(payload) {
+  const byType = {
+    fraud: "고소인은 위와 같은 말이나 자료를 믿고 돈, 물건 또는 재산상 이익을 제공하였거나 제공하려 하였으며, 이후 약속이 이행되지 않아 피해가 발생하였습니다.",
+    embezzlement: "고소인은 피고소인에게 돈이나 물건을 맡기거나 관리하게 하였으나, 피고소인이 반환 또는 정산을 하지 않아 피해가 발생하였습니다.",
+    defamation: "문제된 말이나 게시물로 고소인의 신원이 특정될 수 있고, 이를 본 사람들에게 고소인의 사회적 평가가 낮아질 수 있는 피해가 발생하였습니다.",
+    insult: "문제된 욕설이나 모욕적 표현으로 고소인은 정신적 고통을 겪었고, 그 표현이 전달된 상황과 범위는 수사 과정에서 확인이 필요합니다.",
+    assault: "피고소인의 신체 접촉 또는 폭력적 행위로 고소인에게 신체적 고통과 피해가 발생하였습니다.",
+    injury: "피고소인의 행위로 고소인에게 상처나 치료가 필요한 피해가 발생하였습니다.",
+    stalking: "고소인은 피고소인의 반복적인 연락, 접근 또는 감시 등으로 불안감과 생활상 피해를 겪었습니다.",
+    business: "피고소인의 행위로 고소인의 정상적인 영업 또는 업무 진행이 방해되었습니다.",
+    cyber: "온라인 사이트, 앱, 계정 또는 결제 과정에서 고소인에게 피해가 발생하였습니다.",
+  };
+  return byType[payload.caseTypeId] || "고소인은 위 행위로 인해 형사상 피해를 입었다고 보아 이 고소장을 제출합니다.";
+}
+
+buildTimePlaceSentence = function (payload) {
+  const date = normalizeUnknown(payload.incidentDate);
+  const place = normalizeUnknown(payload.incidentPlace);
+  if (date !== "추후 확인 필요" && place !== "추후 확인 필요") return `사건은 ${date} ${place}에서 발생하였습니다.`;
+  if (date !== "추후 확인 필요") return `사건은 ${date} 발생하였고, 장소는 추후 확인 필요합니다.`;
+  if (place !== "추후 확인 필요") return `사건은 정확한 일시는 추후 확인 필요하나 ${place}에서 발생하였습니다.`;
+  return "사건 일시와 장소는 현재 자료만으로 특정하기 어려우며, 추후 확인 필요합니다.";
+};
+
+buildAccusedSpecificLine = function (payload) {
+  const name = valueOr(payload.accused, "성명불상자");
+  const clues = compactText([payload.accusedContact, payload.accusedAddress, payload.accusedClue], ", ");
+  const base = clues ? `피고소인은 ${name}이며, 현재 확인 가능한 단서는 ${clues}입니다.` : `피고소인은 ${name}이며, 구체적인 인적사항은 추후 확인 필요합니다.`;
+  if (/성명불상|불상|미상|모름/u.test(name)) return `${base} 대화내역, 계좌정보, 계정명, 전화번호, CCTV, 플랫폼 기록 등으로 피고소인을 특정할 필요가 있습니다.`;
+  return base;
+};
+
+buildActionParagraph = function (payload) {
+  const story = String(payload.story || "").trim();
+  const answers = formatQuestionAnswers(payload);
+  const lines = [story, answers].filter(Boolean);
+  return lines.length ? lines.join("\n") : "피고소인이 실제로 한 말이나 행동은 추후 확인 필요합니다.";
+};
+
+buildDamageParagraph = function (payload) {
+  const damage = compactText([payload.damage, payload.damageDetail], " / ");
+  return damage ? `그 결과 고소인은 ${damage}의 피해를 입었습니다.` : "피해금액, 치료기간, 수리비, 영업손실 등 구체적인 피해 내용은 추후 확인 필요합니다.";
+};
+
+buildEvidenceConnection = function (payload, evidenceList) {
+  if (!evidenceList.length) return "현재 제출 예정 증거자료는 기재되지 않았습니다. 범죄사실을 뒷받침할 자료는 추후 확인 필요합니다.";
+  return evidenceList.map((item, index) => {
+    const date = item.date ? `, 증거 날짜는 ${item.date}` : "";
+    const file = item.fileName ? `, 보관 위치 또는 파일명은 ${item.fileName}` : "";
+    return `${index + 1}. ${item.title}${date}${file}: ${valueOr(item.description, "사건 관련 자료")}입니다. 이 자료로 확인하려는 내용은 ${valueOr(item.proves, "피고소인의 행위, 피해 발생 경위 또는 피해 결과")}입니다.`;
+  }).join("\n");
+};
+
+formatQuestionAnswers = function (payload) {
+  const answers = getQuestionAnswersFromPayload(payload).filter((item) => item.answer && item.answer !== "해당 없음");
+  if (!answers.length) return "";
+  return ["추가로 확인된 내용은 다음과 같습니다.", ...answers.map((item, index) => `${index + 1}) ${trimQuestion(item.question)}: ${item.answer}`)].join("\n");
+};
+
+trimQuestion = function (value) {
+  return String(value || "").replace(/[?？.。]\s*$/u, "").trim();
+};
+
+buildEvidenceList = function (payload) {
+  const cardItems = Array.isArray(payload.evidenceCards) ? payload.evidenceCards.filter((item) => item.title || item.description || item.proves || item.fileName) : [];
+  if (cardItems.length) {
+    return cardItems.map((item, index) => ({
+      title: item.title || `증거자료 ${index + 1}`,
+      date: item.date || "",
+      description: item.description || "",
+      proves: item.proves || inferEvidenceProves(payload.caseTypeId, item.title || "", item.description || ""),
+      step: item.step || "",
+      fileName: item.fileName || "",
+    }));
+  }
+  const titles = splitEvidence(payload.evidence || (Array.isArray(payload.evidenceTypes) ? payload.evidenceTypes.join(", ") : ""));
+  const descriptions = String(payload.evidenceDescription || "").split(/\n|;/u).map((item) => item.trim()).filter(Boolean);
+  if (!titles.length && !descriptions.length) return [];
+  const length = Math.max(titles.length, descriptions.length);
+  return Array.from({ length }, (_, index) => ({
+    title: titles[index] || `증거자료 ${index + 1}`,
+    date: "",
+    description: descriptions[index] || descriptions[0] || "",
+    proves: inferEvidenceProves(payload.caseTypeId, titles[index] || "", descriptions[index] || ""),
+    fileName: "",
+  }));
+};
+
+formatEvidenceList = function (evidenceList) {
+  if (!evidenceList.length) return "1) 증거명: 추후 확인 필요\n   입증하려는 사실: 피고소인의 행위, 피해 발생, 피해 결과를 보여주는 자료를 정리해야 합니다.";
+  return evidenceList.map((item, index) => [
+    `${index + 1}) 증거명: ${item.title}`,
+    `   증거 날짜: ${valueOr(item.date, "추후 확인 필요")}`,
+    `   증거 설명: ${valueOr(item.description, "추후 확인 필요")}`,
+    `   입증하려는 사실: ${valueOr(item.proves, "추후 확인 필요")}`,
+    item.fileName ? `   파일명 또는 보관 위치: ${item.fileName}` : "",
+  ].filter(Boolean).join("\n")).join("\n");
+};
+
+inferEvidenceProves = function (caseTypeId, title, description) {
+  const text = `${title} ${description}`;
+  if (/송금|계좌|이체|입금|결제/u.test(text)) return "돈을 보낸 사실, 피해금액, 상대방 계좌 정보";
+  if (/카카오|문자|대화|메시지|녹취|통화/u.test(text)) return "상대방이 한 말, 약속, 요구, 협박 또는 거부 의사 표시";
+  if (/캡처|URL|게시|댓글|화면/u.test(text)) return "게시 위치, 표현 원문, 온라인 피해 경로";
+  if (/진단|병원|치료|상처/u.test(text)) return "상처, 치료 기간, 병원 진료 내용";
+  if (/CCTV|블랙박스|목격/u.test(text)) return "현장 상황과 상대방의 행위";
+  const byType = {
+    fraud: "상대방의 약속, 돈을 보낸 사실, 약속 미이행",
+    defamation: "문제된 글의 원문, 게시 위치, 누가 볼 수 있었는지",
+    insult: "욕설 원문, 말한 장소, 들은 사람",
+    assault: "폭행 방법, 피해 부위, 현장 상황",
+    stalking: "반복 연락, 거부 의사, 불안감",
+  };
+  return byType[caseTypeId] || "사건 내용과 피해 결과";
+};
+
+buildHelpfulChecklist = function (payload, aiMissingInfo = []) {
+  const score = calculateCompletionScore(payload);
+  const missing = Array.isArray(aiMissingInfo) && aiMissingInfo.length ? aiMissingInfo : findMissingInfo(payload);
+  const items = [`고소장 완성도 ${score.score}점 - ${score.label}`];
+  items.push(...score.messages);
+  items.push(...missing.map((item) => item.startsWith("현재 ") ? item : `보완 필요: ${item}`));
+  const answered = getQuestionAnswersFromPayload(payload).filter((item) => item.answer && item.answer !== "해당 없음").length;
+  items.push(answered ? `추가 질문 답변 ${answered}개가 범죄사실에 반영됩니다.` : "추가 질문 답변이 비어 있습니다. 아는 내용만 적으면 범죄사실이 더 구체화됩니다.");
+  return [...new Set(items)];
+};
+
+checkMissingFields = function (payload) {
+  const missing = [];
+  const evidenceList = buildEvidenceList(payload);
+  const accusedKnown = [payload.accused, payload.accusedContact, payload.accusedAddress, payload.accusedClue].some((value) => String(value || "").trim());
+  [
+    [payload.complainant, "고소인 이름을 입력하세요."],
+    [payload.complainantPhone, "고소인 연락처를 입력하세요."],
+    [accusedKnown, "상대방 이름, 연락처, 계정, 계좌번호 등 아는 정보를 하나 이상 입력하세요."],
+    [payload.incidentDate, "사건 날짜를 입력하세요. 정확히 모르면 대략적인 날짜라도 적으세요."],
+    [payload.incidentPlace, "사건 장소나 플랫폼을 입력하세요."],
+    [payload.story, "상대방이 실제로 한 말이나 행동을 적으세요."],
+    [payload.damage || payload.damageDetail, "피해금액, 치료기간, 수리비, 영업손실 등 피해 내용을 적으세요."],
+    [evidenceList.length, "증거자료를 하나 이상 정리하세요."],
+    [evidenceList.some((item) => item.proves || item.description), "증거가 무엇을 보여주는지 적으세요."],
+  ].forEach(([value, label]) => {
+    if (!value || !String(value).trim()) missing.push(label);
+  });
+  missing.push(...typeSpecificMissing(payload));
+  return [...new Set(missing)];
+};
+
+function calculateCompletionScore(payload) {
+  const evidenceList = buildEvidenceList(payload);
+  const checks = [
+    [[payload.accused, payload.accusedContact, payload.accusedAddress, payload.accusedClue].some((value) => String(value || "").trim()), "상대방을 특정할 단서가 필요합니다."],
+    [payload.incidentDate, "사건 날짜가 필요합니다."],
+    [payload.incidentPlace, "사건 장소나 플랫폼이 필요합니다."],
+    [payload.story, "상대방이 한 말이나 행동이 필요합니다."],
+    [payload.damage || payload.damageDetail, "피해 내용이 필요합니다."],
+    [evidenceList.length, "증거자료가 필요합니다."],
+    [evidenceList.some((item) => item.proves || item.description), "증거와 사건 내용의 연결이 필요합니다."],
+  ];
+  const passed = checks.filter(([value]) => Boolean(value && String(value).trim())).length;
+  const score = Math.round((passed / checks.length) * 100);
+  const label = score >= 80 ? "비교적 충분" : score >= 60 ? "일부 보완 필요" : "핵심 내용 부족";
+  const messages = checks.filter(([value]) => !Boolean(value && String(value).trim())).map(([, message]) => message);
+  return { score, label, messages };
+}
+
+typeSpecificMissing = function (payload) {
+  const cardText = Array.isArray(payload.evidenceCards) ? payload.evidenceCards.map((item) => Object.values(item || {}).join(" ")).join(" ") : "";
+  const text = [payload.story, payload.damage, payload.damageDetail, payload.evidence, payload.evidenceDescription, cardText, ...getQuestionAnswersFromPayload(payload).map((item) => `${item.question} ${item.answer}`)].join(" ");
+  const groups = {
+    fraud: [["약속|설명|판매|투자|환불|배송", "사기: 상대방이 어떤 약속이나 설명을 했는지 더 적으면 좋습니다."], ["송금|이체|입금|결제|계좌|원|만원", "사기: 돈을 보낸 날짜, 금액, 방법을 더 적으면 좋습니다."], ["대화|캡처|계좌|판매글|계약|녹취", "사기: 약속 내용과 돈을 보낸 사실을 보여줄 증거를 적으면 좋습니다."]],
+    defamation: [["원문|게시|댓글|단체방|URL|캡처", "명예훼손: 문제된 글의 원문과 게시 위치를 적으면 좋습니다."], ["누가|사람|공개|단체방|조회|댓글", "명예훼손: 그 글을 볼 수 있었던 사람을 적으면 좋습니다."], ["내|고소인|실명|사진|계정|별명", "명예훼손: 그 글이 고소인에 대한 것이라고 알 수 있는 이유를 적으면 좋습니다."]],
+    insult: [["욕|말|원문|모욕|비하", "모욕: 상대방이 한 말을 그대로 적으면 좋습니다."], ["누가|사람|단체방|공개|앞에서", "모욕: 그 말을 들은 사람이나 볼 수 있었던 사람을 적으면 좋습니다."]],
+    assault: [["때리|밀|잡|차|폭행|부위|얼굴|팔|다리", "폭행: 어떤 방식으로 맞거나 밀렸는지와 피해 부위를 적으면 좋습니다."], ["CCTV|목격|사진|신고|112|영상", "폭행: 현장 증거 또는 신고 여부를 적으면 좋습니다."]],
+    injury: [["진단|치료|병원|상처|전치|골절|영수증", "상해: 병원명, 진단명, 치료 기간, 진단서 여부를 적으면 좋습니다."]],
+    embezzlement: [["맡|보관|관리|정산|반환|돌려", "횡령: 돈이나 물건을 맡기게 된 이유와 돌려받기로 한 내용을 적으면 좋습니다."], ["사용|거부|연락두절|반환", "횡령: 상대방이 돌려주지 않거나 마음대로 사용한 정황을 적으면 좋습니다."]],
+    stalking: [["반복|횟수|전화|문자|접근|기다|감시|방문", "스토킹: 반복된 연락이나 방문의 날짜와 횟수를 적으면 좋습니다."], ["그만|거부|연락하지|싫다", "스토킹: 그만하라고 말한 내용이 있으면 적으면 좋습니다."], ["불안|공포|두려|생활|무섭", "스토킹: 불안감이나 생활상 피해를 적으면 좋습니다."]],
+    business: [["업무|영업|가게|손님|매출|예약", "업무방해: 어떤 업무가 어떻게 방해됐는지 적으면 좋습니다."]],
+    cyber: [["URL|사이트|앱|계정|닉네임|이메일|전화", "사이버범죄: 사이트, 앱, URL, 계정명 등 단서를 적으면 좋습니다."]],
+  };
+  return (groups[payload.caseTypeId] || []).filter(([pattern]) => !new RegExp(pattern, "u").test(text)).map(([, message]) => message);
 };
 
 function compactText(values, separator) {
