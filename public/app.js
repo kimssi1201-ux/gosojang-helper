@@ -114,7 +114,8 @@ function renderCaseTypes() {
     button.className = "case-card";
     button.type = "button";
     button.setAttribute("aria-pressed", String(item.id === selectedCaseType));
-    button.innerHTML = `<strong>${escapeHtml(item.name)}</strong><p>${escapeHtml(item.summary)}</p>`;
+    const selectedHint = item.id === selectedCaseType ? '<span class="case-hint">선택됨. 다음을 누르세요.</span>' : "";
+    button.innerHTML = `<strong>${escapeHtml(item.name)}</strong><p>${escapeHtml(item.summary)}</p>${selectedHint}`;
     button.addEventListener("click", () => {
       selectedCaseType = item.id;
       renderCaseTypes();
@@ -1354,7 +1355,8 @@ renderCaseTypes = function () {
     button.className = "case-card";
     button.type = "button";
     button.setAttribute("aria-pressed", String(item.id === selectedCaseType));
-    button.innerHTML = `<strong>${escapeHtml(copy[0])}</strong><p>${escapeHtml(item.summary || "")}</p><span class="case-hint">${escapeHtml(copy[1])}</span>`;
+    const hint = item.id === selectedCaseType ? `${copy[1]} 선택됨. 다음을 누르세요.` : copy[1];
+    button.innerHTML = `<strong>${escapeHtml(copy[0])}</strong><p>${escapeHtml(item.summary || "")}</p><span class="case-hint">${escapeHtml(hint)}</span>`;
     button.addEventListener("click", () => {
       selectedCaseType = item.id;
       renderCaseTypes();
@@ -1976,7 +1978,7 @@ function createWizardCards() {
   const completion = document.createElement("div");
   completion.id = "completionPreview";
   completion.className = "completion-preview";
-  step7Items.splice(2, 0, completion);
+  step7Items.push(completion);
   wrapLooseStep(7, row7, step7Items);
 
   const nav = document.querySelector("#wizardNav");
@@ -2078,10 +2080,23 @@ function updateWizardProgress() {
   if (text) text.textContent = `${wizardState.current} / ${wizardState.total} 단계 작성 중`;
   if (bar) bar.style.width = `${percent}%`;
   if (prev) prev.disabled = wizardState.current <= 1;
-  if (next) next.textContent = wizardState.current >= wizardState.total ? "초안 만들기" : "다음";
+  if (next) next.textContent = getWizardNextLabel();
   document.querySelectorAll(".step-next").forEach((button) => {
-    button.textContent = wizardState.current >= wizardState.total ? "초안 만들기" : "다음";
+    button.textContent = getWizardNextLabel();
   });
+}
+
+function getWizardNextLabel() {
+  const labels = {
+    1: "다음: 기본정보",
+    2: "다음: 일시/장소",
+    3: "다음: 피해사실",
+    4: "다음: 피해내용",
+    5: "다음: 증거",
+    6: "다음: 보완확인",
+    7: "다음: 초안",
+  };
+  return wizardState.current >= wizardState.total ? "초안 만들기" : labels[wizardState.current] || "다음";
 }
 
 function updateWizardSaveText(text = "자동 저장됨") {
