@@ -995,7 +995,7 @@ function buildAccusedSpecificLine(data) {
 }
 
 function buildActionParagraph(data, elements) {
-  const story = compactText([data.story, data.actDetail], "\n");
+  const story = String(data.story || "").trim();
   const answers = formatQuestionAnswers(data);
   const lines = [story, answers].filter(Boolean);
   return lines.length ? lines.join("\n") : "피고소인의 구체적 행위는 추후 확인 필요합니다.";
@@ -1054,7 +1054,7 @@ function getTypeActionGuide(caseTypeId, elements) {
 }
 
 var mapElementsByCrimeType = function (crimeType, input) {
-  const answerText = [input.story, input.actDetail, ...getQuestionAnswersFromPayload(input).map((item) => item.answer)].join(" ");
+  const answerText = [input.story, ...getQuestionAnswersFromPayload(input).map((item) => item.answer)].join(" ");
   const base = {
     evidenceGuide: "증거자료는 해당 사실을 입증하는 취지와 연결해 정리해야 합니다.",
     damagePoint: "",
@@ -1180,7 +1180,7 @@ var checkMissingFields = function (data) {
     [accusedKnown, "피고소인 성명, 연락처, 주소, 계정, 계좌번호 등 특정 단서가 없습니다."],
     [data.incidentDate, "사건 일시가 구체적이지 않습니다. 가능한 날짜 범위라도 입력하세요."],
     [data.incidentPlace, "사건 장소가 없습니다. 장소는 관할 수사기관과 범죄사실 특정에 도움이 됩니다."],
-    [data.story || data.actDetail, "피고소인의 구체적 행위가 부족합니다. 실제로 한 말, 보낸 메시지, 받은 돈, 폭행 방법 등을 적으세요."],
+    [data.story, "사건 설명이 부족합니다. 실제로 한 말, 보낸 메시지, 받은 돈, 폭행 방법 등을 시간순으로 적으세요."],
     [data.damage || data.damageDetail, "피해 내용이 없습니다. 피해금액, 치료기간, 수리비, 영업손실 등을 적으세요."],
     [data.evidence || data.evidenceDescription, "증거자료가 없습니다. 증거명과 입증하려는 사실을 함께 적으세요."],
   ];
@@ -1197,7 +1197,7 @@ findMissingInfo = function (data) {
 };
 
 function typeSpecificMissing(data) {
-  const text = [data.story, data.actDetail, data.damage, data.evidence, data.evidenceDescription, ...getQuestionAnswersFromPayload(data).map((item) => `${item.question} ${item.answer}`)].join(" ");
+  const text = [data.story, data.damage, data.evidence, data.evidenceDescription, ...getQuestionAnswersFromPayload(data).map((item) => `${item.question} ${item.answer}`)].join(" ");
   const groups = {
     fraud: [["거짓말|기망|속|약속|판매|투자", "사기: 피고소인이 한 거짓말 또는 믿게 만든 자료가 부족합니다."], ["송금|이체|입금|전달|결제|물건", "사기: 돈이나 재산을 넘긴 날짜, 금액, 방법이 부족합니다."], ["금액|원|만원", "사기: 피해금액이 구체적이지 않습니다."], ["대화|송금|계좌|캡처|계약|판매글", "사기: 기망행위와 송금 사실을 뒷받침할 증거 설명이 부족합니다."]],
     defamation: [["원문|게시|댓글|발언|표현", "명예훼손: 문제된 표현의 원문이 부족합니다."], ["URL|게시판|단체방|공개|조회|댓글", "명예훼손: 게시 위치와 공개 범위가 부족합니다."], ["실명|별명|사진|계정|특정", "명예훼손: 고소인이 특정되는 이유가 부족합니다."]],
