@@ -2051,8 +2051,17 @@ function showWizardStep(step) {
   });
   updateWizardProgress();
   updateCompletionPreview();
-  const activeCard = document.querySelector(`.wizard-step[data-step="${wizardState.current}"]`);
-  if (wizardState.ready) activeCard?.scrollIntoView({ behavior: "smooth", block: "start" });
+  if (wizardState.ready) scrollWizardToStepTop();
+}
+
+function scrollWizardToStepTop() {
+  const progress = document.querySelector("#wizardProgress");
+  const header = document.querySelector(".app-header");
+  if (!progress) return;
+  const headerHeight = header?.getBoundingClientRect().height || 0;
+  const gap = window.matchMedia("(max-width: 640px)").matches ? 10 : 14;
+  const top = progress.getBoundingClientRect().top + window.scrollY - headerHeight - gap;
+  window.scrollTo({ top: Math.max(top, 0), behavior: "smooth" });
 }
 
 function updateWizardProgress() {
