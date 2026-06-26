@@ -1850,7 +1850,294 @@ setFormValues = function (data) {
   }
 };
 
+const wizardState = { current: 1, total: 8, ready: false };
+
+function setupWizardUx() {
+  setupMobileMenu();
+  setupFreeMode();
+  setupFieldHelpers();
+  createWizardCards();
+  setupWizardButtons();
+  editor.placeholder = "아직 고소장 초안이 없습니다.\n\n위 단계에서 사건 내용을 입력하면 이곳에 초안이 표시됩니다.";
+  if (!hasMeaningfulInput()) {
+    editor.value = "";
+    statusText.textContent = "아직 고소장 초안이 없습니다. 작성 단계에서 사건 내용을 입력해 주세요.";
+  }
+  wizardState.ready = true;
+  showWizardStep(1);
+  updateCompletionPreview();
+}
+
+function setupMobileMenu() {
+  const toggle = document.querySelector("#mobileMenuToggle");
+  const menu = document.querySelector("#topMenu");
+  if (!toggle || !menu) return;
+  toggle.addEventListener("click", () => {
+    const open = menu.classList.toggle("is-open");
+    toggle.setAttribute("aria-expanded", String(open));
+  });
+}
+
+function setupFreeMode() {
+  const panel = document.querySelector("#freeModePanel");
+  const freeInput = document.querySelector("#freeTextInput");
+  document.querySelector("#freeModeBtn")?.addEventListener("click", () => {
+    document.body.dataset.mode = "free";
+    panel.hidden = false;
+    panel.scrollIntoView({ behavior: "smooth", block: "start" });
+    freeInput?.focus();
+  });
+  document.querySelector("#organizeFreeTextBtn")?.addEventListener("click", () => {
+    const text = String(freeInput?.value || "").trim();
+    if (!text) return;
+    form.elements.story.value = text;
+    document.body.dataset.mode = "free";
+    updateEventSummary();
+    syncDraftFromInputs();
+    autoSave();
+    showWizardStep(4);
+  });
+}
+
+function setupFieldHelpers() {
+  const helpText = {
+    complainant: "실제 제출 전 주민등록번호와 서명은 직접 확인하세요.",
+    complainantPhone: "수사기관에서 연락할 수 있는 번호를 적어주세요.",
+    complainantAddress: "정확한 주소를 모르면 시·군·구 정도라도 적어두세요.",
+    accused: "이름을 모르면 성명불상이라고 적어도 됩니다.",
+    accusedContact: "전화번호, 카카오톡 ID, 이메일, SNS 계정도 도움이 됩니다.",
+    relationship: "예: 중고거래 상대, 전 직장동료, 전 연인, 모르는 사람",
+    accusedAddress: "주소, 직장, 차량번호처럼 상대방을 찾는 데 도움이 되는 내용을 적어주세요.",
+    accusedClue: "계좌번호, 닉네임, 프로필 링크처럼 작은 단서도 괜찮습니다.",
+    incidentDateInput: "정확한 날짜를 모르면 아래 사건 설명에 '2026년 6월 초순경'처럼 적어도 됩니다.",
+    incidentPlace: "온라인 사건이면 앱 이름, 단체방 이름, URL을 적어주세요.",
+    story: "시간순으로 적으면 좋습니다. 누가, 언제, 어디서, 무엇을 했는지만 적어도 됩니다.",
+    damage: "돈, 치료기간, 수리비, 영업손실처럼 확인 가능한 피해를 적어주세요.",
+    damageDetail: "피해가 생활에 어떤 영향을 줬는지도 적으면 도움이 됩니다.",
+    evidence: "증거 종류는 위 버튼이나 증거 카드로 정리할 수 있습니다.",
+    evidenceDescription: "파일명보다 '무엇을 보여주는지'가 더 중요합니다.",
+    relatedCase: "이미 신고했거나 민사소송이 있으면 적어주세요. 없으면 해당 없음으로 표시해도 됩니다.",
+    punishmentIntent: "처벌을 원한다는 뜻을 간단히 적으면 됩니다.",
+  };
+
+  [...form.querySelectorAll("label")].forEach((label) => {
+    const field = label.querySelector("input[name], textarea[name]");
+    if (!field || label.dataset.enhanced === "true") return;
+    label.dataset.enhanced = "true";
+    if (["evidence", "evidenceDescription"].includes(field.name)) label.classList.add("legacy-evidence-field");
+    const help = document.createElement("small");
+    help.className = "field-help";
+    help.textContent = helpText[field.name] || "아는 만큼만 적어주세요.";
+    const actions = document.createElement("div");
+    actions.className = "field-quick-actions";
+    [
+      ["잘 모르겠어요", "추후 확인 필요"],
+      ["나중에 입력할게요", ""],
+      ["해당 없어요", "해당 없음"],
+    ].forEach(([text, value]) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = text;
+      button.addEventListener("click", () => {
+        field.value = value;
+        field.dataset.status = text;
+        autoResizeTextareas(field);
+        updateEventSummary();
+        syncDraftFromInputs();
+        autoSave();
+      });
+      actions.append(button);
+    });
+    label.append(help, actions);
+  });
+}
+
+function createWizardCards() {
+  if (document.querySelector(".wizard-step")) return;
+  const inputPane = document.querySelector(".input-pane");
+  const formChildren = [...form.children];
+  const dividers = formChildren.filter((child) => child.classList?.contains("step-divider"));
+  wrapLooseStep(1, findStepRow("어떤 피해"), [findStepRow("어떤 피해"), document.querySelector("#caseTypeGrid")?.previousElementSibling, grid].filter(Boolean));
+  wrapFormStep(2, findStepRow("상대방"), formChildren.slice(0, formChildren.indexOf(dividers[0])));
+  wrapFormStep(3, dividers[0], formChildren.slice(formChildren.indexOf(dividers[0]), formChildren.indexOf(dividers[1])));
+  wrapFormStep(4, dividers[1], formChildren.slice(formChildren.indexOf(dividers[1]), formChildren.indexOf(dividers[2])));
+  wrapFormStep(5, dividers[2], formChildren.slice(formChildren.indexOf(dividers[2]), formChildren.indexOf(dividers[3])));
+  wrapFormStep(6, dividers[3], formChildren.slice(formChildren.indexOf(dividers[3])));
+
+  const row7 = findStepRow("빠진");
+  const row8 = findStepRow("고소장 초안");
+  const step7Items = [];
+  let cursor = row7;
+  while (cursor && cursor !== row8) {
+    const next = cursor.nextElementSibling;
+    step7Items.push(cursor);
+    cursor = next;
+  }
+  const completion = document.createElement("div");
+  completion.id = "completionPreview";
+  completion.className = "completion-preview";
+  step7Items.splice(2, 0, completion);
+  wrapLooseStep(7, row7, step7Items);
+
+  const nav = document.querySelector("#wizardNav");
+  const step8Items = [];
+  cursor = row8;
+  while (cursor && cursor !== nav) {
+    const next = cursor.nextElementSibling;
+    step8Items.push(cursor);
+    cursor = next;
+  }
+  wrapLooseStep(8, row8, step8Items);
+  inputPane.classList.add("wizard-ready");
+}
+
+function wrapLooseStep(step, anchor, items) {
+  if (!anchor || !items.length) return;
+  const card = document.createElement("section");
+  card.className = "wizard-step";
+  card.dataset.step = String(step);
+  anchor.parentElement.insertBefore(card, anchor);
+  items.forEach((item) => card.append(item));
+  appendStepFooter(card);
+}
+
+function wrapFormStep(step, anchor, items) {
+  if (!anchor || !items.length) return;
+  const card = document.createElement("section");
+  card.className = "wizard-step";
+  card.dataset.step = String(step);
+  form.insertBefore(card, items[0]);
+  items.forEach((item) => card.append(item));
+  appendStepFooter(card);
+}
+
+function appendStepFooter(card) {
+  const footer = document.createElement("div");
+  footer.className = "step-card-footer";
+  footer.innerHTML = '<button class="ghost-button step-prev" type="button">이전</button><button class="secondary-button step-save" type="button">임시저장</button><button class="primary-button step-next" type="button">다음</button>';
+  card.append(footer);
+  footer.querySelector(".step-prev").addEventListener("click", () => showWizardStep(wizardState.current - 1));
+  footer.querySelector(".step-save").addEventListener("click", () => {
+    autoSave();
+    saveDraft();
+    updateWizardSaveText("방금 저장됨");
+  });
+  footer.querySelector(".step-next").addEventListener("click", () => {
+    if (wizardState.current >= wizardState.total) generateDraft();
+    else showWizardStep(wizardState.current + 1);
+  });
+}
+
+function setupWizardButtons() {
+  document.querySelector("#prevStepBtn")?.addEventListener("click", () => showWizardStep(wizardState.current - 1));
+  document.querySelector("#nextStepBtn")?.addEventListener("click", () => {
+    if (wizardState.current >= wizardState.total) generateDraft();
+    else showWizardStep(wizardState.current + 1);
+  });
+  document.querySelector("#tempSaveBtn")?.addEventListener("click", () => {
+    autoSave();
+    saveDraft();
+    updateWizardSaveText("방금 저장됨");
+  });
+  document.querySelector("#guidedModeBtn")?.addEventListener("click", () => showWizardStep(1));
+}
+
+function showWizardStep(step) {
+  wizardState.current = Math.min(Math.max(step, 1), wizardState.total);
+  document.querySelectorAll(".wizard-step").forEach((card) => {
+    const active = Number(card.dataset.step) === wizardState.current;
+    card.hidden = !active;
+    card.classList.toggle("is-active", active);
+  });
+  updateWizardProgress();
+  updateCompletionPreview();
+  const activeCard = document.querySelector(`.wizard-step[data-step="${wizardState.current}"]`);
+  if (wizardState.ready) activeCard?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function updateWizardProgress() {
+  const percent = Math.round((wizardState.current / wizardState.total) * 100);
+  const text = document.querySelector("#wizardProgressText");
+  const bar = document.querySelector("#wizardProgressBar");
+  const prev = document.querySelector("#prevStepBtn");
+  const next = document.querySelector("#nextStepBtn");
+  if (text) text.textContent = `${wizardState.current} / ${wizardState.total} 단계 작성 중`;
+  if (bar) bar.style.width = `${percent}%`;
+  if (prev) prev.disabled = wizardState.current <= 1;
+  if (next) next.textContent = wizardState.current >= wizardState.total ? "초안 만들기" : "다음";
+  document.querySelectorAll(".step-next").forEach((button) => {
+    button.textContent = wizardState.current >= wizardState.total ? "초안 만들기" : "다음";
+  });
+}
+
+function updateWizardSaveText(text = "자동 저장됨") {
+  const target = document.querySelector("#wizardSaveText");
+  if (target) target.textContent = text;
+}
+
+function updateCompletionPreview() {
+  const target = document.querySelector("#completionPreview");
+  if (!target) return;
+  const data = getPayload();
+  const score = calculateCompletionScore(data);
+  const checks = getCompletionChecks(data);
+  target.className = `completion-preview score-${score.score >= 80 ? "good" : score.score >= 60 ? "mid" : "low"}`;
+  target.innerHTML = `
+    <div class="completion-head">
+      <div><strong>현재 초안 완성도: ${score.score}점</strong><p>${score.score >= 80 ? "제출 전 검토용 초안으로 사용할 수 있습니다." : "아래 내용을 보완하면 더 좋아요."}</p></div>
+      <div class="completion-ring" style="--score:${score.score}">${score.score}</div>
+    </div>
+    <div class="completion-bar"><span style="width:${score.score}%"></span></div>
+    <div class="completion-checks">${checks.map((item) => `<div class="completion-check ${item.ok ? "ok" : "warn"}"><strong>${item.ok ? "입력됨" : "보완하면 좋아요"}</strong><span>${escapeHtml(item.text)}</span></div>`).join("")}</div>`;
+}
+
+function getCompletionChecks(data) {
+  const evidenceList = buildEvidenceList(data);
+  return [
+    { ok: [data.accused, data.accusedContact, data.accusedAddress, data.accusedClue].some((value) => String(value || "").trim()), text: "상대방 이름, 연락처, 계좌번호, 아이디 같은 단서" },
+    { ok: Boolean(data.incidentDate), text: "사건 날짜" },
+    { ok: Boolean(data.incidentPlace), text: "사건 장소나 플랫폼" },
+    { ok: Boolean(data.story), text: "상대방의 구체적인 행동" },
+    { ok: Boolean(data.damage || data.damageDetail), text: "피해 내용" },
+    { ok: Boolean(evidenceList.length), text: "증거자료" },
+    { ok: evidenceList.some((item) => item.proves || item.description), text: "증거가 보여주는 내용" },
+  ];
+}
+
+function findStepRow(text) {
+  return [...document.querySelectorAll(".step-row")].find((row) => row.textContent.includes(text));
+}
+
+function hasMeaningfulInput() {
+  const data = Object.fromEntries(new FormData(form).entries());
+  return ["complainant", "accused", "incidentDate", "incidentPlace", "story", "damage", "evidence"].some((key) => String(data[key] || "").trim());
+}
+
+const originalSyncDraftFromInputs = syncDraftFromInputs;
+syncDraftFromInputs = function () {
+  originalSyncDraftFromInputs();
+  updateEventSummary();
+  updateCompletionPreview();
+};
+
+const originalAutoSave = autoSave;
+autoSave = function () {
+  originalAutoSave();
+  updateWizardSaveText("자동 저장됨");
+};
+
+renderList = function (target, items) {
+  target.innerHTML = "";
+  for (const text of items.length ? items : ["입력한 내용을 바탕으로 보완할 부분을 알려드릴게요."]) {
+    const li = document.createElement("li");
+    const value = typeof text === "string" ? text : text.label;
+    li.className = value.includes("완성도") ? "score-list-item" : value.includes("필요") || value.includes("보완") ? "soft-warning" : "soft-ok";
+    li.textContent = value;
+    target.append(li);
+  }
+};
+
 init().then(() => {
   setupEasyFlowControls();
-  syncDraftFromInputs();
+  setupWizardUx();
 });
