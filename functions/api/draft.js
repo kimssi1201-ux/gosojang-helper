@@ -73,7 +73,7 @@ async function callOpenAI(payload, env) {
           content: JSON.stringify(
             {
               instruction:
-                "아래 입력을 바탕으로 실제 제출용 고소장 초안을 작성하세요. 반드시 고소취지, 범죄사실, 고소이유, 증거자료, 별지 증거목록, 제출 전 확인사항을 작성합니다. payload.checkedQuestions는 사용자가 확실히 설명할 수 있다고 체크한 보강 사실이므로, 단순 나열하지 말고 범죄사실의 관련 문단에 자연스럽게 반영하세요. 범죄사실은 다음 소제목을 빠짐없이 포함하세요: 가. 피고소인 특정 / 나. 고소인과 피고소인의 관계 및 사건 경위 / 다. 범행 일시와 장소 / 라. 범행 방법과 구체적 행위 / 마. 피해 결과 / 바. 증거와 연결되는 사실 / 사. 범죄유형 및 보충 사정. 범죄사실은 짧은 메모가 아니라 문단형으로 작성하고, 사용자가 적은 사건 설명을 시간순으로 풀어 쓰세요. 증거자료는 각 증거가 무엇을 입증하는지 연결해서 적으세요.",
+                "아래 입력을 바탕으로 실제 제출용 고소장 초안을 작성하세요. 반드시 고소취지, 범죄사실, 고소이유, 증거자료, 별지 증거목록, 제출 전 확인사항을 작성합니다. payload.checkedQuestions는 사용자가 확실히 설명할 수 있다고 체크한 보강 사실입니다. 체크한 항목은 빠뜨리지 말고 각 항목마다 범죄사실에 1문장 이상으로 반영하세요. 단순 나열만 하지 말고, 어떤 범죄 구성요소나 피해 사실을 뒷받침하는지 드러나게 쓰세요. 범죄사실은 다음 소제목을 빠짐없이 포함하세요: 가. 피고소인 특정 / 나. 고소인과 피고소인의 관계 및 사건 경위 / 다. 범행 일시와 장소 / 라. 범행 방법과 구체적 행위 / 마. 피해 결과 / 바. 증거와 연결되는 사실 / 사. 범죄유형 및 보충 사정. 범죄사실은 짧은 메모가 아니라 문단형으로 작성하고, 사용자가 적은 사건 설명을 시간순으로 풀어 쓰세요. 증거자료는 각 증거가 무엇을 입증하는지 연결해서 적으세요.",
               caseTypeRequirements: getCaseTypeRequirements(payload),
               payload,
             },
@@ -156,7 +156,7 @@ function buildComplaintDraft(payload, ai = {}) {
     day: "numeric",
   });
   const evidenceItems = splitEvidence(payload.evidence);
-  const facts = normalizeFactSection(ai.facts) || buildFactSection(payload, evidenceItems);
+  const facts = ensureCheckedFactsInFacts(normalizeFactSection(ai.facts) || buildFactSection(payload, evidenceItems), payload);
 
   return [
     "고 소 장",
@@ -242,6 +242,7 @@ function buildFactSection(payload, evidenceItems) {
     ? payload.checkedQuestions.join(" / ")
     : "[추가로 확인된 보강 사실이 있으면 위 체크 항목에 반영됩니다]";
   const requirements = getCaseTypeRequirements(payload).join(" / ");
+  const checkedFactText = buildCheckedFactText(payload);
 
   return [
     "가. 피고소인 특정",
@@ -256,6 +257,7 @@ function buildFactSection(payload, evidenceItems) {
     "",
     "라. 범행 방법과 구체적 행위",
     sentenceOrPlaceholder(payload.story, "[피고소인이 한 말, 보낸 메시지, 받은 돈이나 물건, 폭행·협박·게시 행위 등 구체적인 행동을 시간순으로 기재]"),
+    checkedFactText,
     "",
     "마. 피해 결과",
     `그 결과 고소인은 ${valueOr(payload.damage, "[피해금액 또는 피해내용 기재]")}의 피해를 입었습니다. 피해가 금전 피해인 경우 송금일, 금액, 계좌, 변제 여부를 함께 적고, 신체·명예·업무상 피해인 경우 진단서, 게시물, 업무 중단 자료 등으로 피해 결과를 보완합니다.`,
@@ -268,6 +270,76 @@ function buildFactSection(payload, evidenceItems) {
     "사. 범죄유형 및 보충 사정",
     `이 사건은 ${valueOr(payload.caseTypeName, "[범죄유형]")} 혐의와 관련된 사실로 정리됩니다. 이 유형에서 특히 확인할 내용은 ${requirements}입니다. 현재 고소인이 확인한 보강 사실은 ${checkedLine}입니다.`,
   ].filter((line) => line !== "").join("\n");
+}
+
+function ensureCheckedFactsInFacts(facts, payload) {
+  const checkedFactText = buildCheckedFactText(payload);
+  if (!checkedFactText || facts.includes("체크한 보강 사실")) return facts;
+
+  const marker = "\n마. 피해 결과";
+  if (facts.includes(marker)) {
+    return facts.replace(marker, `\n${checkedFactText}\n${marker}`);
+  }
+
+  return `${facts}\n\n${checkedFactText}`;
+}
+
+function buildCheckedFactText(payload) {
+  const checked = Array.isArray(payload.checkedQuestions) ? payload.checkedQuestions : [];
+  if (!checked.length) return "";
+
+  return [
+    "체크한 보강 사실",
+    ...checked.map((text) => `- ${checkedQuestionToFactSentence(payload.caseTypeId, text)}`),
+  ].join("\n");
+}
+
+function checkedQuestionToFactSentence(caseTypeId, text) {
+  const rules = {
+    fraud: [
+      ["믿게 만든", "피고소인이 한 말, 자료 또는 약속 때문에 고소인이 이를 믿게 된 사정이 있어 기망행위를 뒷받침할 수 있습니다."],
+      ["날짜, 금액, 방법", "고소인이 돈이나 재산을 넘긴 날짜, 금액, 방법을 설명할 수 있어 처분행위와 피해 발생을 특정할 수 있습니다."],
+      ["능력 또는 의사", "피고소인이 처음부터 변제하거나 이행할 능력 또는 의사가 없었다고 볼 사정이 있어 편취 의심 사정을 뒷받침할 수 있습니다."],
+    ],
+    assault: [
+      ["방법, 부위, 횟수", "피고소인이 폭행한 방법, 피해 부위, 횟수를 설명할 수 있어 폭행 또는 상해 행위를 특정할 수 있습니다."],
+      ["진단서", "상처, 통증, 치료내역 또는 진단서가 있어 피해 결과를 뒷받침할 수 있습니다."],
+      ["현장 증거", "목격자, CCTV, 사진, 신고내역 등 현장 증거가 있어 당시 상황을 확인할 수 있습니다."],
+    ],
+    threat: [
+      ["원문", "피고소인이 한 협박성 말이나 메시지의 원문이 있어 해악 고지 내용을 확인할 수 있습니다."],
+      ["요구한 내용", "피고소인이 돈, 물건 또는 특정 행동을 요구한 내용이 있어 협박 또는 공갈의 목적을 뒷받침할 수 있습니다."],
+      ["불안, 공포", "고소인이 협박 때문에 돈을 주거나 불안과 공포를 느낀 사정이 있어 피해 정도를 설명할 수 있습니다."],
+    ],
+    defamation: [
+      ["원문", "문제가 된 표현의 원문, 캡처 또는 URL이 있어 발언 내용을 특정할 수 있습니다."],
+      ["여러 사람이", "게시글이나 발언을 여러 사람이 볼 수 있었던 사정이 있어 공연성을 뒷받침할 수 있습니다."],
+      ["가리킨다는", "그 표현이 고소인을 가리킨다는 사정이 있어 피해자를 특정할 수 있습니다."],
+    ],
+    embezzlement: [
+      ["보관하거나 관리", "피고소인이 돈이나 물건을 보관하거나 관리하는 지위에 있었던 사정이 있어 보관자 지위를 설명할 수 있습니다."],
+      ["다르게 사용", "피고소인이 정해진 용도와 다르게 사용한 사정이 있어 횡령 또는 배임의 경위를 뒷받침할 수 있습니다."],
+      ["손해액", "손해액, 계좌내역, 회계자료 등으로 피해 규모를 설명할 수 있습니다."],
+    ],
+    stalking: [
+      ["날짜와 횟수", "연락, 접근, 기다림 또는 감시가 반복된 날짜와 횟수가 있어 반복성을 설명할 수 있습니다."],
+      ["거부 의사", "고소인이 그만하라는 거부 의사를 표시한 기록이 있어 상대방이 이를 알았다는 사정을 뒷받침할 수 있습니다."],
+      ["불안감", "불안감, 생활상 피해 또는 신변보호 필요성이 있어 피해 정도를 설명할 수 있습니다."],
+    ],
+    cyber: [
+      ["URL", "피해가 발생한 사이트, 앱, 계정 또는 URL을 알고 있어 사건 발생 경로를 특정할 수 있습니다."],
+      ["캡처", "접속기록, 결제내역, 대화내역 또는 화면 캡처가 있어 피해 발생 과정을 확인할 수 있습니다."],
+      ["금전 피해", "개인정보, 계정 또는 금전 피해가 발생해 구체적인 피해 결과를 설명할 수 있습니다."],
+    ],
+    business: [
+      ["정상적인 업무", "정상적으로 진행되던 업무가 피고소인의 행위로 어떻게 방해되었는지 설명할 수 있어 업무방해 행위를 특정할 수 있습니다."],
+      ["반복되거나 계획적", "방해 행위가 반복되거나 계획적으로 이루어진 정황이 있어 우발적 행위가 아니라는 점을 뒷받침할 수 있습니다."],
+      ["매출 손실", "매출 손실, 고객 이탈, 업무 중단 기록이 있어 업무방해로 인한 피해 결과를 설명할 수 있습니다."],
+    ],
+  };
+
+  const matched = (rules[caseTypeId] || []).find(([keyword]) => text.includes(keyword));
+  return matched ? matched[1] : `${text} 이 사정은 범죄사실을 뒷받침하는 보강 내용으로 함께 제출합니다.`;
 }
 
 function buildReasonSection(payload, evidenceItems) {
