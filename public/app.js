@@ -2055,13 +2055,18 @@ function showWizardStep(step) {
 }
 
 function scrollWizardToStepTop() {
+  const activeCard = document.querySelector(`.wizard-step[data-step="${wizardState.current}"]`);
   const progress = document.querySelector("#wizardProgress");
   const header = document.querySelector(".app-header");
-  if (!progress) return;
+  if (!activeCard || !progress) return;
   const headerHeight = header?.getBoundingClientRect().height || 0;
-  const gap = window.matchMedia("(max-width: 640px)").matches ? 10 : 14;
-  const top = progress.getBoundingClientRect().top + window.scrollY - headerHeight - gap;
-  window.scrollTo({ top: Math.max(top, 0), behavior: "smooth" });
+  const progressHeight = progress.getBoundingClientRect().height || 0;
+  const gap = window.matchMedia("(max-width: 640px)").matches ? 12 : 16;
+  requestAnimationFrame(() => {
+    const activeTop = activeCard.getBoundingClientRect().top + window.scrollY;
+    const top = activeTop - headerHeight - progressHeight - gap;
+    window.scrollTo({ top: Math.max(top, 0), behavior: "smooth" });
+  });
 }
 
 function updateWizardProgress() {
