@@ -619,17 +619,37 @@ function findMissingInfo(data) {
 }
 
 function buildPrecedentQueries(type) {
-  return (type.lawKeywords || [type.name]).map((keyword) => {
-    const label = `${type.name} ${keyword}`;
-    return {
-      label,
-      url: `https://www.law.go.kr/precSc.do?query=${encodeURIComponent(label)}`,
-    };
-  });
+  const crimeName = String(type?.name || "형사").trim();
+  const keywords = [...new Set([crimeName, ...(type?.lawKeywords || [])])]
+    .map((keyword) => String(keyword || "").trim())
+    .filter(Boolean)
+    .filter((keyword, index, list) => list.indexOf(keyword) === index);
+  const focused = keywords
+    .filter((keyword) => keyword !== crimeName)
+    .slice(0, 3);
+  const lawQueries = [
+    [crimeName, focused[0]].filter(Boolean).join(" "),
+    [crimeName, focused[1] || "구성요건"].filter(Boolean).join(" "),
+    [crimeName, focused[2] || "증거"].filter(Boolean).join(" "),
+  ].filter(Boolean);
+  const uniqueQueries = [...new Set(lawQueries)];
+  return [
+    ...uniqueQueries.map((query) => ({
+      label: `국가법령정보센터: ${query}`,
+      url: `https://www.law.go.kr/LSW/precSc.do?query=${encodeURIComponent(query)}`,
+      help: "새 창에서 판례 검색 결과를 확인하세요.",
+    })),
+    {
+      label: `구글 보조검색: ${crimeName} 판례`,
+      url: `https://www.google.com/search?q=${encodeURIComponent(`site:law.go.kr ${crimeName} 판례`)}`,
+      help: "공식 검색이 약할 때 보조로 사용하세요.",
+    },
+  ];
 }
 
 function renderDraft(text, meta = {}) {
   editor.value = text || "";
+  editor.scrollTop = 0;
   renderList(missingList, meta.missingInfo || []);
   renderPrecedents(meta.precedentQueries || buildPrecedentQueries(getSelectedType()));
 }
@@ -647,12 +667,20 @@ function renderPrecedents(items) {
   precedentList.innerHTML = "";
   for (const item of items) {
     const li = document.createElement("li");
+    li.className = "precedent-item";
     const link = document.createElement("a");
-    link.href = item.url || "https://www.law.go.kr/precSc.do";
+    link.href = item.url || "https://www.law.go.kr/LSW/precSc.do";
     link.target = "_blank";
     link.rel = "noreferrer";
+    link.className = "precedent-link";
     link.textContent = item.label || item;
     li.append(link);
+    if (item.help) {
+      const help = document.createElement("small");
+      help.className = "precedent-help";
+      help.textContent = item.help;
+      li.append(help);
+    }
     precedentList.append(li);
   }
 }
@@ -1318,6 +1346,7 @@ async function copyDraft() {
 function autoResizeTextareas(target) {
   const targets = target ? [target] : [...document.querySelectorAll("textarea")];
   for (const textarea of targets) {
+    if (textarea.id === "draftEditor") continue;
     textarea.style.height = "auto";
     textarea.style.height = `${Math.min(Math.max(textarea.scrollHeight, 78), 900)}px`;
   }
