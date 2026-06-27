@@ -36,12 +36,12 @@ function patchDraftConsistency() {
   let draft = originalDraft;
 
   draft = patchPersonName(draft, "1. 고소인*", data.complainant || "[고소인 성명]");
-  draft = patchPersonDetail(draft, "1. 고소인*", "2. 피고소인*", "주민등록번호", "[제출 전 직접 기재]");
+  draft = patchPersonDetail(draft, "1. 고소인*", "2. 피고소인*", "주민등록번호", "______________________________  (제출 전 출력물에 직접 기재)");
   draft = patchPersonDetail(draft, "1. 고소인*", "2. 피고소인*", "주소", data.complainantAddress || "[주소]");
   draft = patchPersonDetail(draft, "1. 고소인*", "2. 피고소인*", "전화", data.complainantPhone || "[연락처]");
 
   draft = patchPersonName(draft, "2. 피고소인*", data.accused || "[피고소인 성명 또는 성명불상]");
-  draft = patchPersonDetail(draft, "2. 피고소인*", "3. 고소취지*", "주민등록번호", "[알고 있는 경우 제출 전 직접 기재]");
+  draft = patchPersonDetail(draft, "2. 피고소인*", "3. 고소취지*", "주민등록번호", "______________________________  (알고 있는 경우 제출 전 직접 기재)");
   draft = patchPersonDetail(draft, "2. 피고소인*", "3. 고소취지*", "주소", data.accusedAddress || "[주소 또는 알 수 없는 사유]");
   draft = patchPersonDetail(draft, "2. 피고소인*", "3. 고소취지*", "전화", data.accusedContact || "[연락처 또는 계정]");
 
