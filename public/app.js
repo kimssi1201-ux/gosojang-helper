@@ -2125,7 +2125,7 @@ function getWizardNextLabel() {
     6: "다음: 보완확인",
     7: "다음: 초안",
   };
-  return wizardState.current >= wizardState.total ? "초안 만들기" : labels[wizardState.current] || "다음";
+  return wizardState.current >= wizardState.total ? "고소장 만들기" : labels[wizardState.current] || "다음";
 }
 
 function updateWizardSaveText(text = "자동 저장됨") {
