@@ -648,10 +648,16 @@ function buildPrecedentQueries(type) {
 }
 
 function renderDraft(text, meta = {}) {
-  editor.value = text || "";
+  editor.value = normalizePrintableIdBlanks(text || "");
   editor.scrollTop = 0;
   renderList(missingList, meta.missingInfo || []);
   renderPrecedents(meta.precedentQueries || buildPrecedentQueries(getSelectedType()));
+}
+
+function normalizePrintableIdBlanks(text) {
+  return String(text || "")
+    .replace(/주민등록번호:\s*\[제출 전 직접 기재\]/g, "주민등록번호: ______________________________  (제출 전 출력물에 직접 기재)")
+    .replace(/주민등록번호:\s*\[알고 있는 경우 제출 전 직접 기재\]/g, "주민등록번호: ______________________________  (알고 있는 경우 제출 전 직접 기재)");
 }
 
 function renderList(target, items) {

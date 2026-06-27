@@ -113,7 +113,11 @@ function patchPersonDetail(draft, sectionTitle, endTitle, label, value) {
 
   const section = draft.slice(start, end);
   const pattern = new RegExp(`(^${escapeRegExp(label)}:).*`, "m");
-  if (!pattern.test(section)) return draft;
+  if (!pattern.test(section)) {
+    if (label !== "주민등록번호") return draft;
+    const inserted = section.replace(/(^성명:.*$)/m, `$1\n${label}: ${value}`);
+    return `${draft.slice(0, start)}${inserted}${draft.slice(end)}`;
+  }
 
   const patched = section.replace(pattern, (_match, prefix) => `${prefix} ${value}`);
   return `${draft.slice(0, start)}${patched}${draft.slice(end)}`;
