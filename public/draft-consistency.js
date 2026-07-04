@@ -4,27 +4,29 @@ const consistencyGrid = document.querySelector("#caseTypeGrid");
 
 let consistencyApplying = false;
 let consistencyLastSnapshot = "";
+let consistencyPatchTimer = 0;
 
 if (consistencyForm && consistencyEditor) {
   window.addEventListener("load", scheduleConsistencyPatch);
   consistencyForm.addEventListener("input", scheduleConsistencyPatch);
   consistencyForm.addEventListener("change", scheduleConsistencyPatch);
   consistencyGrid?.addEventListener("click", scheduleConsistencyPatch);
+  consistencyEditor.addEventListener("draft:rendered", scheduleConsistencyPatch);
+  consistencyEditor.addEventListener("input", scheduleConsistencyPatch);
   document.querySelector("#generateBtn")?.addEventListener("click", () => {
     scheduleConsistencyPatch();
     setTimeout(scheduleConsistencyPatch, 800);
     setTimeout(scheduleConsistencyPatch, 1800);
     setTimeout(scheduleConsistencyPatch, 4000);
   });
-
-  setInterval(() => {
-    const snapshot = getConsistencySnapshot();
-    if (snapshot !== consistencyLastSnapshot) patchDraftConsistency();
-  }, 700);
 }
 
 function scheduleConsistencyPatch() {
-  setTimeout(patchDraftConsistency, 0);
+  clearTimeout(consistencyPatchTimer);
+  consistencyPatchTimer = setTimeout(() => {
+    const snapshot = getConsistencySnapshot();
+    if (snapshot !== consistencyLastSnapshot) patchDraftConsistency();
+  }, 120);
 }
 
 function patchDraftConsistency() {

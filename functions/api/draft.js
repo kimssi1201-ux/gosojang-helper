@@ -1,6 +1,9 @@
 const fallbackHeaders = {
   "Content-Type": "application/json; charset=utf-8",
 };
+const maxRequestBytes = 120_000;
+const maxFieldLength = 4_000;
+const maxArrayItems = 30;
 
 const factSectionTitles = [
   "가. 피고소인 특정",
@@ -15,7 +18,15 @@ const factSectionTitles = [
 export async function onRequestPost({ request, env }) {
   let payload;
   try {
-    payload = await request.json();
+    const contentLength = Number(request.headers.get("Content-Length") || 0);
+    if (contentLength > maxRequestBytes) {
+      return json({ message: "입력 내용이 너무 깁니다. 핵심 내용만 줄여서 다시 시도해 주세요." }, 413);
+    }
+    const raw = await request.text();
+    if (new TextEncoder().encode(raw).length > maxRequestBytes) {
+      return json({ message: "입력 내용이 너무 깁니다. 핵심 내용만 줄여서 다시 시도해 주세요." }, 413);
+    }
+    payload = sanitizePayload(JSON.parse(raw));
   } catch {
     return json({ message: "요청 형식이 올바르지 않습니다." }, 400);
   }
@@ -159,7 +170,7 @@ function buildComplaintDraft(payload, ai = {}) {
     "",
     "1. 고소인*",
     `성명: ${valueOr(payload.complainant, "[고소인 성명]")}`,
-    "주민등록번호: [제출 전 직접 기재]",
+    "주민등록번호: ______________________________  (제출 전 출력물에 직접 기재)",
     `주소: ${valueOr(payload.complainantAddress, "[주소]")}`,
     "직업: [직업]",
     `전화: ${valueOr(payload.complainantPhone, "[연락처]")}`,
@@ -168,7 +179,7 @@ function buildComplaintDraft(payload, ai = {}) {
     "",
     "2. 피고소인*",
     `성명: ${valueOr(payload.accused, "[피고소인 성명 또는 성명불상]")}`,
-    "주민등록번호: [알고 있는 경우 제출 전 직접 기재]",
+    "주민등록번호: ______________________________  (알고 있는 경우 제출 전 직접 기재)",
     `주소: ${valueOr(payload.accusedAddress, "[주소 또는 알 수 없는 사유]")}`,
     "직업: [직업]",
     `전화: ${valueOr(payload.accusedContact, "[연락처 또는 계정]")}`,
@@ -265,6 +276,36 @@ function buildFactSection(payload, evidenceItems) {
     "사. 범죄유형 및 보충 사정",
     `${typeFacts.legalPoint} 이 유형에서 특히 확인할 내용은 ${requirements}입니다. 현재 고소인이 확인한 보강 사실은 ${checkedLine}입니다.`,
   ].filter((line) => line !== "").join("\n");
+}
+
+function sanitizePayload(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const allowedKeys = new Set([
+    "caseTypeId", "caseTypeName", "lawKeywords", "questions", "checkedQuestions", "questionAnswers",
+    "complainant", "complainantPhone", "complainantAddress", "accused", "accusedContact", "relationship",
+    "accusedAddress", "accusedClue", "incidentDate", "incidentDateInput", "incidentPlace", "story",
+    "damage", "damageDetail", "evidence", "evidenceDescription", "evidenceTypes", "evidenceCards",
+    "relatedCase", "punishmentIntent",
+  ]);
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([key]) => allowedKeys.has(key))
+      .map(([key, item]) => [key, sanitizeValue(item)]),
+  );
+}
+
+function sanitizeValue(value) {
+  if (typeof value === "string") return value.slice(0, maxFieldLength).trim();
+  if (Array.isArray(value)) return value.slice(0, maxArrayItems).map(sanitizeValue);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value)
+        .slice(0, maxArrayItems)
+        .map(([key, item]) => [String(key).slice(0, 80), sanitizeValue(item)]),
+    );
+  }
+  if (typeof value === "number" || typeof value === "boolean") return value;
+  return "";
 }
 
 function buildTypeSpecificFactText(payload, evidenceItems) {
@@ -557,17 +598,26 @@ function findMissingInfo(payload) {
 }
 
 function buildPrecedentQueries(payload) {
-  const keywords = Array.isArray(payload.lawKeywords) && payload.lawKeywords.length
-    ? payload.lawKeywords
-    : [payload.caseTypeName || "형사"];
-
-  return keywords.map((keyword) => {
-    const label = `${payload.caseTypeName || "형사"} ${keyword}`;
-    return {
-      label,
-      url: `https://www.law.go.kr/precSc.do?query=${encodeURIComponent(label)}`,
-    };
-  });
+  const crimeName = String(payload.caseTypeName || "형사").trim();
+  const keywords = [...new Set([crimeName, ...(Array.isArray(payload.lawKeywords) ? payload.lawKeywords : [])])]
+    .map((keyword) => String(keyword || "").trim())
+    .filter(Boolean);
+  const focused = keywords.filter((keyword) => keyword !== crimeName).slice(0, 3);
+  const queries = [
+    [crimeName, focused[0]].filter(Boolean).join(" "),
+    [crimeName, focused[1] || "구성요건"].filter(Boolean).join(" "),
+    [crimeName, focused[2] || "증거"].filter(Boolean).join(" "),
+  ];
+  return [
+    ...[...new Set(queries)].map((query) => ({
+      label: `국가법령정보센터: ${query}`,
+      url: `https://www.law.go.kr/LSW/precSc.do?query=${encodeURIComponent(query)}`,
+    })),
+    {
+      label: `구글 보조검색: ${crimeName} 판례`,
+      url: `https://www.google.com/search?q=${encodeURIComponent(`site:law.go.kr ${crimeName} 판례`)}`,
+    },
+  ];
 }
 
 function sentenceOrPlaceholder(value, placeholder) {

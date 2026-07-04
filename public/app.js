@@ -650,6 +650,7 @@ function buildPrecedentQueries(type) {
 function renderDraft(text, meta = {}) {
   editor.value = normalizePrintableIdBlanks(text || "");
   editor.scrollTop = 0;
+  editor.dispatchEvent(new CustomEvent("draft:rendered", { bubbles: true }));
   renderList(missingList, meta.missingInfo || []);
   renderPrecedents(meta.precedentQueries || buildPrecedentQueries(getSelectedType()));
 }
