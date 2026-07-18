@@ -85,6 +85,7 @@ function Draw-PhonePreview($g, $x, $y, $w, $h) {
 }
 
 function New-Thumbnail($path, $width, $height, $playGraphic) {
+  $wideGraphic = ($width -eq 1932 -and $height -eq 828)
   $bmp = New-Object System.Drawing.Bitmap $width, $height, ([System.Drawing.Imaging.PixelFormat]::Format24bppRgb)
   $g = [System.Drawing.Graphics]::FromImage($bmp)
   $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
@@ -110,18 +111,22 @@ function New-Thumbnail($path, $width, $height, $playGraphic) {
   $bodyFont = New-Font ([int]($height * 0.042)) ([System.Drawing.FontStyle]::Bold)
   $badgeFont = New-Font ([int]($height * 0.03)) ([System.Drawing.FontStyle]::Bold)
 
-  Draw-BrandMark $g 72 68 ([int]($height * 0.115))
-  Draw-Text $g "고소장 도우미" $brandFont $ink 160 78 420 52
+  $leftX = if ($wideGraphic) { 140 } else { 72 }
+  $brandY = if ($wideGraphic) { 96 } else { 68 }
+  $brandSize = if ($wideGraphic) { 96 } else { [int]($height * 0.115) }
+  Draw-BrandMark $g $leftX $brandY $brandSize
+  Draw-Text $g "고소장 도우미" $brandFont $ink ($leftX + $brandSize + 34) ($brandY + 16) 520 70
 
   $headline = if ($playGraphic) { "질문에 답하면`n고소장 초안 정리" } else { "질문에 답하면`n고소장 초안 완성" }
-  Draw-Text $g $headline $headlineFont $ink 72 165 ([int]($width * 0.55)) ([int]($height * 0.34))
-  Draw-Text $g "범죄유형별 작성 · 증거정리 · PDF 저장" $bodyFont $muted 76 ([int]($height * 0.62)) ([int]($width * 0.58)) 44
+  $headlineY = if ($wideGraphic) { 255 } else { 165 }
+  Draw-Text $g $headline $headlineFont $ink $leftX $headlineY ([int]($width * 0.55)) ([int]($height * 0.34))
+  Draw-Text $g "범죄유형별 작성 · 증거정리 · PDF 저장" $bodyFont $muted ($leftX + 4) ([int]($height * 0.62)) ([int]($width * 0.58)) 54
 
   $badges = @("주민번호 미입력", "브라우저 임시저장", "제출 전 확인")
-  $badgeX = 76
+  $badgeX = $leftX + 4
   foreach ($badge in $badges) {
-    $badgeWidth = if ($playGraphic) { 182 } else { 210 }
-    $badgeGap = if ($playGraphic) { 12 } else { 18 }
+    $badgeWidth = if ($wideGraphic) { 260 } elseif ($playGraphic) { 182 } else { 210 }
+    $badgeGap = if ($wideGraphic) { 24 } elseif ($playGraphic) { 12 } else { 18 }
     $badgePath = New-RoundRect $badgeX ([int]($height * 0.76)) $badgeWidth 44 22
     $g.FillPath(([System.Drawing.Brushes]::White), $badgePath)
     $g.DrawPath($linePen, $badgePath)
@@ -130,7 +135,9 @@ function New-Thumbnail($path, $width, $height, $playGraphic) {
     $badgePath.Dispose()
   }
 
-  if ($playGraphic) {
+  if ($wideGraphic) {
+    Draw-PhonePreview $g 1360 96 420 600
+  } elseif ($playGraphic) {
     Draw-PhonePreview $g 660 50 286 400
   } else {
     Draw-PhonePreview $g 790 82 318 458
@@ -144,9 +151,8 @@ function New-Thumbnail($path, $width, $height, $playGraphic) {
 
 New-Thumbnail (Join-Path $root "public\og.png") 1200 630 $false
 New-Thumbnail (Join-Path $storeDir "thumbnail-1200x630.png") 1200 630 $false
+New-Thumbnail (Join-Path $storeDir "thumbnail-1932x828.png") 1932 828 $false
 New-Thumbnail (Join-Path $storeDir "google-play-feature-1024x500.png") 1024 500 $true
 
 Get-ChildItem $storeDir, (Join-Path $root "public\og.png") | Select-Object FullName, Length
-
-
 
