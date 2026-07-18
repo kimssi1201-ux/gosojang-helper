@@ -13,6 +13,9 @@ const required = [
   "public/icons/icon-512.png",
   "public/icons/icon-maskable-512.png",
   "public/icons/apple-touch-icon.png",
+  "public/og.png",
+  "public/store/thumbnail-1200x630.png",
+  "public/store/google-play-feature-1024x500.png",
   "functions/api/draft.js",
   "functions/api/cases.js",
 ];
