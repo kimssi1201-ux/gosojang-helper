@@ -26,8 +26,21 @@ export async function onRequest(context) {
 
   const response = await context.next();
   const headers = new Headers(response.headers);
+  const url = new URL(context.request.url);
   for (const [key, value] of corsHeaders.entries()) {
     headers.set(key, value);
+  }
+
+  headers.set("X-Content-Type-Options", "nosniff");
+  headers.set("X-Frame-Options", "DENY");
+  headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  headers.set("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
+
+  if (url.pathname === "/sw.js") {
+    headers.set("Cache-Control", "no-cache");
+  }
+  if (url.pathname === "/manifest.webmanifest") {
+    headers.set("Content-Type", "application/manifest+json; charset=utf-8");
   }
 
   return new Response(response.body, {
