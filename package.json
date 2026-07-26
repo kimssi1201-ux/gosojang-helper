@@ -7,7 +7,9 @@
     "dev": "wrangler pages dev public --compatibility-date=2026-06-25",
     "start": "wrangler pages dev public --compatibility-date=2026-06-25",
     "deploy": "wrangler pages deploy public --project-name=gosojang-helper",
-    "check": "node tools/check-files.mjs"
+    "check": "node tools/check-files.mjs",
+    "test": "node --test",
+    "verify": "npm run check && npm test"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"
