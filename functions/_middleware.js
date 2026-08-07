@@ -4,6 +4,21 @@ const allowedOrigins = new Set([
   "https://gosojang-helper.pages.dev",
 ]);
 
+const duplicateHosts = new Set([
+  "www.seeyou.kr",
+  "gosojang-helper.pages.dev",
+]);
+
+function redirectToCanonicalHost(request) {
+  const url = new URL(request.url);
+  if (!duplicateHosts.has(url.hostname)) return null;
+
+  url.protocol = "https:";
+  url.hostname = "seeyou.kr";
+  url.port = "";
+  return Response.redirect(url.toString(), 308);
+}
+
 function corsHeadersFor(request) {
   const origin = request.headers.get("Origin") || "";
   const headers = new Headers({
@@ -16,6 +31,9 @@ function corsHeadersFor(request) {
 }
 
 export async function onRequest(context) {
+  const canonicalRedirect = redirectToCanonicalHost(context.request);
+  if (canonicalRedirect) return canonicalRedirect;
+
   const corsHeaders = corsHeadersFor(context.request);
   if (context.request.method === "OPTIONS") {
     if (!corsHeaders.has("Access-Control-Allow-Origin")) {
@@ -41,6 +59,12 @@ export async function onRequest(context) {
   }
   if (url.pathname === "/manifest.webmanifest") {
     headers.set("Content-Type", "application/manifest+json; charset=utf-8");
+  }
+  if (url.pathname === "/ads.txt" || url.pathname === "/robots.txt") {
+    headers.set("Content-Type", "text/plain; charset=utf-8");
+  }
+  if (url.pathname === "/sitemap.xml") {
+    headers.set("Content-Type", "application/xml; charset=utf-8");
   }
 
   return new Response(response.body, {

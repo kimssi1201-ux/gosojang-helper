@@ -30,6 +30,22 @@ test("middleware blocks CORS preflight from unknown origin", async () => {
   assert.equal(response.headers.get("Access-Control-Allow-Origin"), null);
 });
 
+test("middleware redirects duplicate production hosts to the canonical domain", async () => {
+  for (const url of [
+    "https://www.seeyou.kr/guide?from=www",
+    "https://gosojang-helper.pages.dev/examples",
+  ]) {
+    const response = await onRequest(context(url));
+    const source = new URL(url);
+
+    assert.equal(response.status, 308);
+    assert.equal(
+      response.headers.get("Location"),
+      `https://seeyou.kr${source.pathname}${source.search}`,
+    );
+  }
+});
+
 test("middleware adds security headers to normal responses", async () => {
   const response = await onRequest(context("https://seeyou.kr/"));
 
@@ -46,4 +62,14 @@ test("middleware sets PWA-specific headers", async () => {
 
   assert.equal(sw.headers.get("Cache-Control"), "no-cache");
   assert.equal(manifest.headers.get("Content-Type"), "application/manifest+json; charset=utf-8");
+});
+
+test("middleware sets crawler file content types", async () => {
+  const ads = await onRequest(context("https://seeyou.kr/ads.txt"));
+  const robots = await onRequest(context("https://seeyou.kr/robots.txt"));
+  const sitemap = await onRequest(context("https://seeyou.kr/sitemap.xml"));
+
+  assert.equal(ads.headers.get("Content-Type"), "text/plain; charset=utf-8");
+  assert.equal(robots.headers.get("Content-Type"), "text/plain; charset=utf-8");
+  assert.equal(sitemap.headers.get("Content-Type"), "application/xml; charset=utf-8");
 });

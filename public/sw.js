@@ -1,10 +1,10 @@
-const CACHE_NAME = "gosojang-helper-v20260718";
+const CACHE_NAME = "gosojang-helper-v20260807";
 const APP_SHELL = [
   "/",
   "/index.html",
   "/offline.html",
-  "/styles.css?v=pwa-ready-20260718",
-  "/info.css",
+  "/styles.css?v=trust-20260807",
+  "/info.css?v=trust-20260807",
   "/app.js?v=security-performance-fix-20260704",
   "/draft-consistency.js?v=security-performance-fix-20260704",
   "/photo-attachments.js?v=security-performance-fix-20260704",
@@ -14,6 +14,9 @@ const APP_SHELL = [
   "/glossary.html",
   "/checklist.html",
   "/examples.html",
+  "/evidence-guide.html",
+  "/filing-process.html",
+  "/about.html",
   "/privacy.html",
   "/terms.html",
   "/data/case-types.json",
