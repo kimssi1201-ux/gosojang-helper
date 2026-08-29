@@ -28,10 +28,10 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-    <link rel="stylesheet" href="/styles.css?v=magazine-20260829" />
+    <link rel="stylesheet" href="/styles.css?v=landing-20260829" />
   </head>
-  <body id="top" class="magazine-body">
-    <header class="app-header magazine-header">
+  <body id="top" class="home-body">
+    <header class="app-header home-header">
       <a class="brand" href="/" aria-label="고소장 도우미 메인으로 이동">
         <div class="brand-mark" aria-hidden="true">ㄱ</div>
         <div><h1>고소장 도우미</h1></div>
@@ -48,130 +48,42 @@
       </nav>
     </header>
 
-    <main class="magazine-page">
-      <section class="lead-board" aria-label="대표 안내">
-        <article class="story-card story-card-large">
-          <a href="/guide" aria-label="고소장 처음 쓰는 법 보기">
-            <span class="story-image"><img src="/og.png" alt="고소장 도우미 작성 화면 미리보기" /></span>
-            <span class="story-kicker">작성법</span>
-            <h2>고소장 처음 쓰는 분이라면, 이 순서부터 확인하세요</h2>
-            <p>상대방 정보, 범죄사실, 피해 결과, 증거자료를 어떤 흐름으로 정리해야 하는지 한 번에 봅니다.</p>
-          </a>
-        </article>
-        <article class="story-card story-card-large">
-          <a href="/write" aria-label="고소장 초안 작성하기">
-            <span class="story-image"><img src="/store/thumbnail-1200x630.png" alt="질문에 답하면 고소장 초안 완성" /></span>
-            <span class="story-kicker">작성 도구</span>
-            <h2>질문에 답하면서 내 사건용 고소장 초안을 만드세요</h2>
-            <p>사기, 폭행, 협박, 명예훼손 등 사건 유형에 맞춰 빠진 내용을 확인하고 초안을 자동 정리합니다.</p>
-          </a>
-        </article>
+    <main class="landing-page">
+      <section class="hero-panel">
+        <p class="eyebrow">무료 · 회원가입 없이 바로 시작</p>
+        <h1>고소장, 질문에 답하기만 하면 초안이 완성됩니다</h1>
+        <p>언제, 어디서, 누가, 무엇을 했는지만 순서대로 입력하면 인적사항, 범죄사실, 증거목록을 갖춘 고소장 초안으로 정리해드립니다. 법률용어를 몰라도 괜찮습니다.</p>
+        <div class="hero-actions">
+          <a class="hero-cta" href="/write">지금 작성 시작하기</a>
+          <a class="ghost-link-button" href="/guide">처음이라면 작성법부터 보기</a>
+        </div>
+        <p class="hero-note">이 서비스는 법률 자문이 아닌 문서 초안 작성 보조 도구입니다. 실제 제출 전에는 사실관계, 증거, 관할 수사기관을 다시 확인하고 필요하면 변호사 상담을 받으세요.</p>
       </section>
 
-      <section class="compact-board" aria-label="주요 자료">
-        <article class="story-card story-card-compact">
-          <a href="/examples">
-            <span class="topic-thumb topic-blue">유형</span>
-            <h3>사기·폭행·협박·명예훼손 예시</h3>
-          </a>
-        </article>
-        <article class="story-card story-card-compact">
-          <a href="/evidence-guide">
-            <span class="topic-thumb topic-green">증거</span>
-            <h3>대화 캡처와 송금내역 정리법</h3>
-          </a>
-        </article>
-        <article class="story-card story-card-compact">
-          <a href="/filing-process">
-            <span class="topic-thumb topic-gold">제출</span>
-            <h3>경찰서 제출 전 준비할 것</h3>
-          </a>
-        </article>
-        <article class="story-card story-card-compact">
-          <a href="/checklist">
-            <span class="topic-thumb topic-red">점검</span>
-            <h3>제출 전 빠뜨리기 쉬운 항목</h3>
-          </a>
-        </article>
-      </section>
-
-      <section class="magazine-section">
-        <h2>최신 작성 가이드</h2>
-        <div class="four-card-grid">
-          <article class="story-card"><a href="/guide"><span class="topic-thumb topic-blue">기본</span><h3>고소장에 반드시 들어가는 항목</h3><p>고소인, 피고소인, 고소취지, 범죄사실, 증거자료를 빠뜨리지 않는 법.</p></a></article>
-          <article class="story-card"><a href="/glossary"><span class="topic-thumb topic-green">용어</span><h3>고소장 용어를 쉬운 말로 보기</h3><p>피고소인, 범죄사실, 고소취지, 관련사건 같은 말을 짧게 정리했습니다.</p></a></article>
-          <article class="story-card"><a href="/evidence-guide"><span class="topic-thumb topic-gold">자료</span><h3>증거는 파일명보다 설명이 중요합니다</h3><p>각 자료가 무엇을 보여주는지 한 문장으로 붙이면 사건 흐름이 선명해집니다.</p></a></article>
-          <article class="story-card"><a href="/checklist"><span class="topic-thumb topic-red">확인</span><h3>제출 전 마지막 체크리스트</h3><p>날짜, 장소, 상대방 단서, 피해 내용, 서명까지 제출 직전 확인합니다.</p></a></article>
+      <section id="case-types" class="case-type-quick" aria-label="사건 유형 선택">
+        <h2>어떤 일을 당하셨나요?</h2>
+        <p>가까운 유형을 고르면 바로 작성 화면으로 이동합니다. 정확한 죄명을 몰라도 됩니다.</p>
+        <div class="case-type-links">
+          <a href="/write#write">사기</a>
+          <a href="/write#write">폭행·상해</a>
+          <a href="/write#write">협박·공갈</a>
+          <a href="/write#write">명예훼손·모욕</a>
+          <a href="/write#write">스토킹·가정폭력</a>
+          <a href="/write#write">횡령·배임</a>
+          <a href="/write#write">사이버범죄</a>
+          <a href="/write#write">그 외 유형</a>
         </div>
       </section>
 
-      <section id="case-types" class="magazine-section split-section">
-        <h2>사건유형별 고소장</h2>
-        <div class="split-layout">
-          <article class="story-card story-card-feature">
-            <a href="/examples">
-              <span class="story-image"><img src="/store/google-play-feature-1024x500.png" alt="유형별 고소장 작성 예시" /></span>
-              <span class="story-kicker">유형별 예시</span>
-              <h3>죄명을 정확히 몰라도, 핵심 사실부터 맞추면 됩니다</h3>
-              <p>사기라면 거짓말과 송금, 폭행이라면 부위와 진단서, 명예훼손이라면 표현 원문과 공개 범위를 먼저 봅니다.</p>
-            </a>
-          </article>
-          <div class="mini-grid">
-            <article class="story-card"><a href="/examples"><span class="topic-thumb topic-blue">사기</span><h3>송금일, 기망행위, 미이행 경과</h3></a></article>
-            <article class="story-card"><a href="/examples"><span class="topic-thumb topic-red">폭행</span><h3>맞은 부위, 치료기간, CCTV 위치</h3></a></article>
-            <article class="story-card"><a href="/examples"><span class="topic-thumb topic-gold">협박</span><h3>해악 고지 원문과 요구 내용</h3></a></article>
-            <article class="story-card"><a href="/examples"><span class="topic-thumb topic-green">명예</span><h3>게시글 원문, URL, 공개 범위</h3></a></article>
-          </div>
-        </div>
-      </section>
-
-      <section class="magazine-section split-section">
-        <h2>증거자료 정리법</h2>
-        <div class="split-layout">
-          <article class="story-card story-card-feature">
-            <a href="/evidence-guide">
-              <span class="story-image"><img src="/og.png" alt="고소장 증거자료 정리 화면" /></span>
-              <span class="story-kicker">증거정리</span>
-              <h3>증거는 번호, 날짜, 설명을 붙이면 훨씬 강해집니다</h3>
-              <p>대화 캡처, 계좌이체내역, 녹음, 사진, 진단서가 범죄사실의 어느 부분을 뒷받침하는지 연결합니다.</p>
-            </a>
-          </article>
-          <div class="mini-grid">
-            <article class="story-card"><a href="/evidence-guide"><span class="topic-thumb topic-green">대화</span><h3>상대방 표시와 앞뒤 흐름까지 캡처</h3></a></article>
-            <article class="story-card"><a href="/evidence-guide"><span class="topic-thumb topic-blue">송금</span><h3>날짜, 금액, 받는 사람을 함께 보관</h3></a></article>
-            <article class="story-card"><a href="/evidence-guide"><span class="topic-thumb topic-red">사진</span><h3>촬영일, 장소, 보여주는 내용을 기록</h3></a></article>
-            <article class="story-card"><a href="/evidence-guide"><span class="topic-thumb topic-gold">CCTV</span><h3>보관 기간 전 장소와 시간을 빠르게 확인</h3></a></article>
-          </div>
-        </div>
-      </section>
-
-      <section class="magazine-section split-section">
-        <h2>제출절차 안내</h2>
-        <div class="split-layout">
-          <article class="story-card story-card-feature">
-            <a href="/filing-process">
-              <span class="story-image"><img src="/store/thumbnail-1932x828.png" alt="고소장 제출 절차 안내" /></span>
-              <span class="story-kicker">제출절차</span>
-              <h3>초안을 만든 뒤에는 접수기관과 증거 사본을 확인하세요</h3>
-              <p>방문 제출, 우편 제출, 접수증 확인, 조사 연락 준비까지 제출 전후 흐름을 정리했습니다.</p>
-            </a>
-          </article>
-          <div class="mini-grid">
-            <article class="story-card"><a href="/filing-process"><span class="topic-thumb topic-blue">준비</span><h3>신분증, 고소장, 증거 사본</h3></a></article>
-            <article class="story-card"><a href="/filing-process"><span class="topic-thumb topic-green">접수</span><h3>사건번호와 접수기관 기록</h3></a></article>
-            <article class="story-card"><a href="/filing-process"><span class="topic-thumb topic-gold">조사</span><h3>날짜순 사건표와 증거 위치 확인</h3></a></article>
-            <article class="story-card"><a href="/filing-process"><span class="topic-thumb topic-red">추가</span><h3>새 증거는 확보일과 출처를 함께 제출</h3></a></article>
-          </div>
-        </div>
-      </section>
-
-      <section class="magazine-section">
-        <h2>예시·체크리스트</h2>
-        <div class="four-card-grid">
-          <article class="story-card"><a href="/examples"><span class="topic-thumb topic-blue">예문</span><h3>고소취지 공통 문장</h3><p>처벌을 원한다는 뜻을 짧고 분명하게 쓰는 예시를 확인합니다.</p></a></article>
-          <article class="story-card"><a href="/examples"><span class="topic-thumb topic-green">불상</span><h3>상대방 이름을 모를 때 쓰는 법</h3><p>성명불상이어도 계정, 전화번호, 계좌번호 같은 단서를 적을 수 있습니다.</p></a></article>
-          <article class="story-card"><a href="/checklist"><span class="topic-thumb topic-gold">서명</span><h3>제출 직전 빠지는 날짜와 서명</h3><p>고소장 마지막 날짜, 이름, 서명 또는 날인을 직접 확인합니다.</p></a></article>
-          <article class="story-card"><a href="/privacy"><span class="topic-thumb topic-red">안전</span><h3>주민번호와 사진 자료 보관 원칙</h3><p>민감정보를 최소화하고 브라우저 임시저장 범위를 확인합니다.</p></a></article>
+      <section class="info-links" aria-label="작성에 도움 되는 자료">
+        <h2>작성 전에 확인하면 좋은 자료</h2>
+        <div class="info-links-grid">
+          <a href="/guide"><strong>고소장 작성법</strong><span>고소장에 들어가는 기본 항목과 범죄사실 쓰는 순서를 정리했습니다.</span></a>
+          <a href="/examples"><strong>유형별 예시</strong><span>사기, 폭행, 협박, 명예훼손 등 문장 흐름을 참고할 수 있습니다.</span></a>
+          <a href="/evidence-guide"><strong>증거자료 정리법</strong><span>대화 캡처, 송금내역, 사진, CCTV를 정리하는 방법입니다.</span></a>
+          <a href="/filing-process"><strong>제출절차 안내</strong><span>준비물, 접수기관, 조사 이후 흐름을 안내합니다.</span></a>
+          <a href="/checklist"><strong>제출 전 체크리스트</strong><span>날짜, 서명처럼 빠뜨리기 쉬운 항목을 확인합니다.</span></a>
+          <a href="/glossary"><strong>용어설명</strong><span>고소취지, 범죄사실 같은 말을 쉬운 말로 풀어봅니다.</span></a>
         </div>
       </section>
 
@@ -184,25 +96,9 @@
       </section>
     </main>
 
-    <footer class="magazine-footer">
-      <div class="footer-inner">
-        <div class="footer-brand">
-          <div class="brand-mark" aria-hidden="true">ㄱ</div>
-          <strong>고소장 도우미</strong>
-        </div>
-        <nav aria-label="하단 메뉴">
-          <a href="/guide">작성법</a>
-          <a href="/examples">예시</a>
-          <a href="/evidence-guide">증거정리</a>
-          <a href="/filing-process">제출절차</a>
-          <a href="/checklist">체크리스트</a>
-          <a href="/about">서비스 소개</a>
-          <a href="/privacy">개인정보 안내</a>
-          <a href="/terms">이용약관</a>
-        </nav>
-        <p>고소장 도우미는 문서 초안 작성을 돕는 정보 서비스입니다. 법률 자문을 대신하지 않으며, 실제 제출 전 사실관계와 증거자료를 직접 확인해야 합니다.</p>
-        <small>Copyright © 2026 고소장 도우미. All rights reserved.</small>
-      </div>
+    <footer class="app-footer">
+      <span>고소장 도우미는 초안 작성 보조 서비스입니다.</span>
+      <span><a href="/guide">작성법</a> · <a href="/examples">예시</a> · <a href="/evidence-guide">증거정리</a> · <a href="/filing-process">제출절차</a> · <a href="/checklist">체크리스트</a> · <a href="/about">서비스 소개</a> · <a href="/privacy">개인정보 안내</a> · <a href="/terms">이용약관</a></span>
     </footer>
 
     <script>
