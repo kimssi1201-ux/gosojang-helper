@@ -2,6 +2,7 @@ import { access, readFile } from "node:fs/promises";
 
 const required = [
   "public/index.html",
+  "public/write.html",
   "public/styles.css",
   "public/app.js",
   "public/manifest.webmanifest",

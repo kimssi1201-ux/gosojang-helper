@@ -3,22 +3,22 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>고소장 작성 도우미 | 질문으로 만드는 형사 고소장 초안</title>
-    <meta name="description" content="사건 내용을 정리해 형사 고소장 초안 작성을 도와주는 사이트" />
+    <title>고소장 도우미 | 작성법, 증거정리, 제출절차 안내</title>
+    <meta name="description" content="고소장 작성법, 사건유형별 예시, 증거자료 정리, 제출절차와 초안 작성 도구를 한곳에서 확인하세요." />
     <meta name="robots" content="index,follow" />
     <link rel="canonical" href="https://seeyou.kr/" />
     <meta name="theme-color" content="#185abc" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="고소장 도우미" />
     <meta property="og:title" content="고소장 도우미" />
-    <meta property="og:description" content="질문에 답하면 고소장 초안, 증거정리, PDF 저장까지 도와드립니다." />
+    <meta property="og:description" content="작성법, 증거정리, 제출절차를 읽고 질문형 도구로 고소장 초안을 만들어보세요." />
     <meta property="og:url" content="https://seeyou.kr/" />
     <meta property="og:image" content="https://seeyou.kr/og.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="고소장 도우미" />
-    <meta name="twitter:description" content="질문에 답하면 고소장 초안, 증거정리, PDF 저장까지 도와드립니다." />
+    <meta name="twitter:description" content="고소장 작성법, 유형별 예시, 증거정리, 제출절차를 차분히 확인하세요." />
     <meta name="twitter:image" content="https://seeyou.kr/og.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="고소장 도우미" />
@@ -28,217 +28,194 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-    <link rel="stylesheet" href="/styles.css?v=trust-20260807" />
-    <style>
-      .inline-field-row { display: grid; grid-column: 1 / -1; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 10px; }
-      @media (max-width: 980px) { body { padding-bottom: 0; } }
-      @media (max-width: 640px) { body { padding-bottom: 0; } .inline-field-row { grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); } .inline-field-row input { padding-left: 10px; padding-right: 10px; } }
-    </style>
+    <link rel="stylesheet" href="/styles.css?v=magazine-20260829" />
   </head>
-  <body id="top">
-    <header class="app-header">
+  <body id="top" class="magazine-body">
+    <header class="app-header magazine-header">
       <a class="brand" href="/" aria-label="고소장 도우미 메인으로 이동">
         <div class="brand-mark" aria-hidden="true">ㄱ</div>
         <div><h1>고소장 도우미</h1></div>
       </a>
       <button id="mobileMenuToggle" class="menu-toggle" type="button" aria-expanded="false" aria-controls="topMenu">메뉴</button>
       <nav id="topMenu" class="top-menu" aria-label="주요 메뉴">
-        <a href="#write">작성하기</a>
+        <a href="/write">작성하기</a>
+        <a href="#case-types">사건유형</a>
         <a href="/guide">작성법</a>
-        <a href="/examples">예시</a>
         <a href="/evidence-guide">증거정리</a>
         <a href="/filing-process">제출절차</a>
-        <a href="/about">소개</a>
-        <a href="#draft" hidden>초안</a>
-        <button id="menuSaveBtn" type="button" hidden>저장</button>
-        <button id="menuShareBtn" type="button" hidden>공유</button>
+        <a href="/examples">예시</a>
+        <a href="/checklist">체크리스트</a>
       </nav>
     </header>
 
-    <main class="workspace">
-      <section id="write" class="input-pane" aria-label="사건 입력">
-        <section class="start-card">
-          <p class="eyebrow">쉬운 고소장 도우미</p>
-          <h2>고소장 작성이 어렵다면, 질문에 답해보세요</h2>
-          <p>법률용어를 몰라도 괜찮습니다. 언제, 어디서, 누가, 무엇을 했는지만 차근차근 입력하면 고소장 초안 형식으로 정리해드립니다.</p>
-          <div class="mode-actions">
-            <button id="guidedModeBtn" class="primary-button" type="button">질문에 답하면서 작성하기</button>
-            <button id="freeModeBtn" class="secondary-button" type="button">이미 쓴 내용 붙여넣기</button>
-          </div>
-          <p class="storage-note">입력한 내용은 이 브라우저에 임시 저장됩니다. 서버에는 저장하지 않습니다.</p>
-          <div class="trust-strip" aria-label="신뢰 안내">
-            <div><strong>주민번호 미입력</strong><span>출력 후 직접 적는 빈칸만 만듭니다.</span></div>
-            <div><strong>사진 미저장</strong><span>첨부 사진은 이 화면 미리보기로만 사용합니다.</span></div>
-            <div><strong>제출 전 확인</strong><span>사실관계, 증거, 서명은 마지막에 직접 확인합니다.</span></div>
-          </div>
-          <details class="simple-notice safety-notice">
-            <summary>작성 전 꼭 확인해주세요</summary>
-            <p>이 서비스는 고소장 초안 작성을 돕는 도구입니다. 변호사의 법률 자문을 대신하지 않으며, 허위 사실을 고의로 신고하면 법적 책임이 발생할 수 있습니다. 실제 있었던 일과 보유한 증거를 중심으로 작성해주세요.</p>
-          </details>
-          <div class="official-source-row" aria-label="공식 참고자료">
-            <span>공식 참고자료</span>
-            <a href="https://www.spo.go.kr/site/seoul/01/10101030200002018120505.jsp" target="_blank" rel="noreferrer">검찰 사건절차</a>
-            <a href="https://minwon24.police.go.kr/cvlcpt/cvlcptTmpltGdList.do" target="_blank" rel="noreferrer">경찰 민원서식</a>
-            <a href="https://www.law.go.kr/LSW/precSc.do" target="_blank" rel="noreferrer">국가법령정보센터</a>
-          </div>
-          <div class="resource-link-grid" aria-label="작성 도움 자료">
-            <a href="/guide"><strong>범죄사실 작성 순서</strong><span>날짜, 장소, 행동, 피해를 적는 방법</span></a>
-            <a href="/evidence-guide"><strong>증거자료 정리법</strong><span>대화, 송금내역, 사진에 설명 붙이기</span></a>
-            <a href="/filing-process"><strong>제출 후 절차</strong><span>접수, 사건번호, 조사 준비 확인하기</span></a>
-          </div>
-          <section id="installCard" class="install-card" aria-label="앱 설치 안내">
-            <div>
-              <strong>휴대폰 홈 화면에 설치할 수 있어요</strong>
-              <span>자주 쓰는 분은 앱처럼 열 수 있습니다. 작성 중인 내용은 이 기기에 임시 저장됩니다.</span>
-            </div>
-            <button id="installAppBtn" class="secondary-button" type="button" hidden>설치하기</button>
-            <p id="installHelpText">아이폰은 공유 버튼을 누른 뒤 홈 화면에 추가를 선택하세요.</p>
-          </section>
-        </section>
+    <main class="magazine-page">
+      <section class="lead-board" aria-label="대표 안내">
+        <article class="story-card story-card-large">
+          <a href="/guide" aria-label="고소장 처음 쓰는 법 보기">
+            <span class="story-image"><img src="/og.png" alt="고소장 도우미 작성 화면 미리보기" /></span>
+            <span class="story-kicker">작성법</span>
+            <h2>고소장 처음 쓰는 분이라면, 이 순서부터 확인하세요</h2>
+            <p>상대방 정보, 범죄사실, 피해 결과, 증거자료를 어떤 흐름으로 정리해야 하는지 한 번에 봅니다.</p>
+          </a>
+        </article>
+        <article class="story-card story-card-large">
+          <a href="/write" aria-label="고소장 초안 작성하기">
+            <span class="story-image"><img src="/store/thumbnail-1200x630.png" alt="질문에 답하면 고소장 초안 완성" /></span>
+            <span class="story-kicker">작성 도구</span>
+            <h2>질문에 답하면서 내 사건용 고소장 초안을 만드세요</h2>
+            <p>사기, 폭행, 협박, 명예훼손 등 사건 유형에 맞춰 빠진 내용을 확인하고 초안을 자동 정리합니다.</p>
+          </a>
+        </article>
+      </section>
 
-        <section id="freeModePanel" class="free-mode-panel" hidden>
-          <h2>이미 적어둔 내용을 고소장 형식으로 정리해드릴게요</h2>
-          <p>메모장, 카카오톡, 블로그 글처럼 길게 적은 내용도 괜찮습니다. 사건 내용을 붙여넣으면 날짜, 장소, 상대방 행동, 피해, 증거로 나누어 정리합니다.</p>
-          <label>사건 내용 붙여넣기<textarea id="freeTextInput" rows="8" placeholder="여기에 사건 내용을 그대로 붙여넣어 주세요. 문장이 정리되어 있지 않아도 괜찮습니다."></textarea></label>
-          <button id="organizeFreeTextBtn" class="primary-button" type="button">내용 정리하기</button>
-        </section>
+      <section class="compact-board" aria-label="주요 자료">
+        <article class="story-card story-card-compact">
+          <a href="/examples">
+            <span class="topic-thumb topic-blue">유형</span>
+            <h3>사기·폭행·협박·명예훼손 예시</h3>
+          </a>
+        </article>
+        <article class="story-card story-card-compact">
+          <a href="/evidence-guide">
+            <span class="topic-thumb topic-green">증거</span>
+            <h3>대화 캡처와 송금내역 정리법</h3>
+          </a>
+        </article>
+        <article class="story-card story-card-compact">
+          <a href="/filing-process">
+            <span class="topic-thumb topic-gold">제출</span>
+            <h3>경찰서 제출 전 준비할 것</h3>
+          </a>
+        </article>
+        <article class="story-card story-card-compact">
+          <a href="/checklist">
+            <span class="topic-thumb topic-red">점검</span>
+            <h3>제출 전 빠뜨리기 쉬운 항목</h3>
+          </a>
+        </article>
+      </section>
 
-        <div id="wizardProgress" class="wizard-status" aria-live="polite">
-          <div><strong id="wizardProgressText">1 / 8 단계 작성 중</strong><span id="wizardSaveText">자동 저장 대기 중</span></div>
-          <div class="progress-track" aria-hidden="true"><span id="wizardProgressBar"></span></div>
-        </div>
-
-        <div class="step-row"><span class="step-badge">1</span><h2>어떤 피해를 입었나요?</h2></div>
-        <p class="step-help">가장 가까운 내용을 고르세요. 정확한 죄명을 몰라도 됩니다.</p>
-        <div id="caseTypeGrid" class="case-type-grid"></div>
-
-        <div class="step-row"><span class="step-badge">2</span><h2>내 정보와 상대방 정보를 적어주세요</h2></div>
-        <p class="simple-notice">주민등록번호는 민감정보라 사이트에서 입력받지 않습니다. 초안에는 출력 후 직접 적을 수 있는 빈칸이 만들어집니다.</p>
-        <form id="complaintForm" class="form-grid">
-          <div class="section-mini-title full-width">내 정보</div>
-          <div class="inline-field-row">
-            <label>고소인<input name="complainant" placeholder="예: 홍길동" autocomplete="off" /></label>
-            <label>연락처<input name="complainantPhone" placeholder="예: 010-1234-5678" inputmode="tel" autocomplete="tel" /></label>
-          </div>
-          <div class="paper-blank-field full-width">
-            <strong>고소인 주민등록번호</strong>
-            <span>______________________________</span>
-            <small>사이트에 입력하지 않고, 출력 후 직접 적는 칸입니다.</small>
-          </div>
-          <label>고소인 주소<input name="complainantAddress" placeholder="예: 서울시 강남구 ○○로" autocomplete="street-address" /></label>
-          <div class="section-mini-title full-width">상대방 정보</div>
-          <div class="inline-field-row">
-            <label>상대방 이름<input name="accused" placeholder="예: 김철수 또는 성명불상" autocomplete="off" /></label>
-            <label>연락처/계정<input name="accusedContact" placeholder="예: 전화번호, 카카오톡 ID, 계정명" autocomplete="off" /></label>
-          </div>
-          <div class="paper-blank-field full-width">
-            <strong>상대방 주민등록번호</strong>
-            <span>______________________________</span>
-            <small>알고 있는 경우에만 출력 후 직접 적으세요. 모르면 비워도 됩니다.</small>
-          </div>
-          <label>상대방과의 관계<input name="relationship" placeholder="예: 지인, 거래상대, 직장동료, 모르는 사람" autocomplete="off" /></label>
-          <label>주소 또는 추가 단서<input name="accusedAddress" placeholder="예: 주소, 직장, 차량번호, 계정 단서" autocomplete="off" /></label>
-          <label>이름을 모르면 아는 정보<input name="accusedClue" placeholder="예: 계좌번호, 닉네임, 차량번호, 프로필 링크" autocomplete="off" /></label>
-
-          <div class="step-divider full-width"><span>Step 3</span><strong>언제, 어디서 있었나요?</strong><p>정확히 모르면 가능한 날짜 범위나 기억나는 장소를 적어주세요.</p></div>
-          <label>사건 일시<input name="incidentDateInput" type="datetime-local" /><input name="incidentDate" type="hidden" /></label>
-          <label>장소 또는 플랫폼<input name="incidentPlace" placeholder="예: 서울 강남구 사무실 / 카카오톡 단체방 / 중고거래 앱" /></label>
-          <div class="step-divider full-width"><span>Step 4</span><strong>피해사실을 적어주세요</strong><p>상대방이 실제로 한 말이나 행동, 그로 인해 생긴 피해를 시간순으로 적어주세요.</p></div>
-          <label class="full-width main-fact-field">피해사실<textarea name="story" rows="9" placeholder="예: 2026년 6월 20일 중고거래 앱에서 상대방이 노트북을 판매한다고 하여 50만원을 송금했습니다. 상대방은 물건을 보내겠다고 했지만 이후 물건을 보내지 않았고, 연락도 받지 않았습니다. 그래서 50만원 피해를 입었습니다."></textarea></label>
-          <div id="eventSummaryPanel" class="summary-panel full-width" hidden></div>
-
-          <div class="step-divider full-width"><span>Step 5</span><strong>어떤 피해가 생겼나요?</strong><p>피해금액, 치료기간, 수리비, 영업손실처럼 확인 가능한 피해를 적어주세요.</p></div>
-          <label>피해금액 또는 피해내용<input name="damage" placeholder="예: 500만원 / 전치 2주 상해" /></label>
-          <label>피해 정도<input name="damageDetail" placeholder="예: 치료 2주, 수리비 80만원, 영업 중단 3시간" /></label>
-
-          <div class="step-divider full-width"><span>Step 6</span><strong>증거가 있나요?</strong><p>파일명만 쓰지 말고, 그 증거가 무엇을 보여주는지 함께 적어주세요.</p></div>
-          <label class="full-width photo-field evidence-photo-field">증거사진 첨부<input id="photoInput" type="file" accept="image/*" multiple /><small class="field-help">사진, 캡처 화면, 진단서 사진 등 여러 장을 올릴 수 있습니다. 파일은 서버에 저장하지 않고 이 브라우저에서만 미리보기로 사용합니다.</small></label>
-          <button id="clearPhotoBtn" class="ghost-button photo-clear-button" type="button" hidden>첨부사진 지우기</button>
-          <div id="photoPreview" class="photo-preview full-width" hidden></div>
-          <div id="evidenceTypeGrid" class="evidence-type-grid full-width" aria-label="증거 종류 선택"></div>
-          <div id="evidenceCardList" class="evidence-card-list full-width"></div>
-          <button id="addEvidenceBtn" class="ghost-button mini-button full-width" type="button">+ 증거 추가하기</button>
-          <label>증거자료<input name="evidence" placeholder="예: 문자, 계좌이체내역, 녹취, CCTV" /></label>
-          <label>증거 설명<input name="evidenceDescription" placeholder="예: 계좌이체내역은 50만원 송금 사실을 입증" /></label>
-          <label>관련 사건 여부<input name="relatedCase" placeholder="예: 112 신고 있음 / 민사소송 없음 / 확인 필요" /></label>
-          <label>처벌 의사<input name="punishmentIntent" placeholder="예: 피고소인의 처벌을 원합니다" /></label>
-        </form>
-
-        <div class="step-row"><span class="step-badge">7</span><h2>빠진 내용을 확인해요</h2></div>
-        <p class="simple-notice"><strong>추가로 확인하면 좋은 내용</strong><br />아는 내용만 적으세요. 답변한 내용은 고소장 초안의 범죄사실과 완성도 체크에 직접 반영됩니다.</p>
-        <div id="dynamicQuestions" class="question-box"></div>
-
-        <div class="step-row"><span class="step-badge">8</span><h2>고소장 초안을 만들어요</h2></div>
-        <p class="step-help">초안을 만들면 부족한 항목을 오른쪽 완성도 체크에서 보여줍니다.</p>
-
-        <div class="action-row" hidden>
-          <button id="generateBtn" class="primary-button wide" type="button">고소장 만들기</button>
-          <button id="templateBtn" class="secondary-button" type="button" hidden>템플릿 초안</button>
-        </div>
-        <p id="autoSaveStatus" class="autosave-status">입력 내용은 이 브라우저에 자동 저장됩니다.</p>
-        <div id="wizardNav" class="wizard-nav" aria-label="단계 이동">
-          <button id="prevStepBtn" class="ghost-button" type="button">이전</button>
-          <button id="tempSaveBtn" class="secondary-button" type="button">임시저장</button>
-          <button id="nextStepBtn" class="primary-button" type="button">다음</button>
+      <section class="magazine-section">
+        <h2>최신 작성 가이드</h2>
+        <div class="four-card-grid">
+          <article class="story-card"><a href="/guide"><span class="topic-thumb topic-blue">기본</span><h3>고소장에 반드시 들어가는 항목</h3><p>고소인, 피고소인, 고소취지, 범죄사실, 증거자료를 빠뜨리지 않는 법.</p></a></article>
+          <article class="story-card"><a href="/glossary"><span class="topic-thumb topic-green">용어</span><h3>고소장 용어를 쉬운 말로 보기</h3><p>피고소인, 범죄사실, 고소취지, 관련사건 같은 말을 짧게 정리했습니다.</p></a></article>
+          <article class="story-card"><a href="/evidence-guide"><span class="topic-thumb topic-gold">자료</span><h3>증거는 파일명보다 설명이 중요합니다</h3><p>각 자료가 무엇을 보여주는지 한 문장으로 붙이면 사건 흐름이 선명해집니다.</p></a></article>
+          <article class="story-card"><a href="/checklist"><span class="topic-thumb topic-red">확인</span><h3>제출 전 마지막 체크리스트</h3><p>날짜, 장소, 상대방 단서, 피해 내용, 서명까지 제출 직전 확인합니다.</p></a></article>
         </div>
       </section>
 
-      <section id="draft" class="output-pane" aria-label="고소장 미리보기">
-        <div class="preview-toolbar">
-          <div><h2>고소장 초안</h2><p id="statusText">입력 후 초안을 생성하세요.</p></div>
-          <div class="preview-actions">
-            <button id="saveDraftBtn" class="ghost-button" type="button">저장</button>
-            <button id="loadDraftBtn" class="ghost-button" type="button">불러오기</button>
-            <button id="copyDraftBtn" class="ghost-button" type="button">복사</button>
-            <button id="kakaoShareBtn" class="ghost-button kakao-button" type="button">카카오톡</button>
-            <button id="downloadTxtBtn" class="ghost-button" type="button">TXT</button>
-            <button id="printBtn" class="ghost-button" type="button">인쇄/PDF 저장</button>
+      <section id="case-types" class="magazine-section split-section">
+        <h2>사건유형별 고소장</h2>
+        <div class="split-layout">
+          <article class="story-card story-card-feature">
+            <a href="/examples">
+              <span class="story-image"><img src="/store/google-play-feature-1024x500.png" alt="유형별 고소장 작성 예시" /></span>
+              <span class="story-kicker">유형별 예시</span>
+              <h3>죄명을 정확히 몰라도, 핵심 사실부터 맞추면 됩니다</h3>
+              <p>사기라면 거짓말과 송금, 폭행이라면 부위와 진단서, 명예훼손이라면 표현 원문과 공개 범위를 먼저 봅니다.</p>
+            </a>
+          </article>
+          <div class="mini-grid">
+            <article class="story-card"><a href="/examples"><span class="topic-thumb topic-blue">사기</span><h3>송금일, 기망행위, 미이행 경과</h3></a></article>
+            <article class="story-card"><a href="/examples"><span class="topic-thumb topic-red">폭행</span><h3>맞은 부위, 치료기간, CCTV 위치</h3></a></article>
+            <article class="story-card"><a href="/examples"><span class="topic-thumb topic-gold">협박</span><h3>해악 고지 원문과 요구 내용</h3></a></article>
+            <article class="story-card"><a href="/examples"><span class="topic-thumb topic-green">명예</span><h3>게시글 원문, URL, 공개 범위</h3></a></article>
           </div>
         </div>
+      </section>
 
-        <textarea id="draftEditor" class="draft-editor" spellcheck="false"></textarea>
-        <div id="draftPhotoPreview" class="draft-photo-preview" hidden></div>
-
-        <div class="reference-panel">
-          <div><h3>고소장 완성도 체크</h3><ul id="missingList"></ul></div>
-          <div><h3>제출 전 신뢰 확인</h3><ul class="trust-check-list"><li>주민등록번호는 사이트에 저장하지 않고 출력 후 직접 적습니다.</li><li>초안은 법률 자문이 아니라 문서 정리용입니다.</li><li>확실하지 않은 내용은 단정하지 말고 확인 필요로 남기세요.</li><li>제출 전 증거자료 이름과 실제 첨부파일을 맞춰보세요.</li></ul></div>
-          <div><h3>판례 참고</h3><ul id="precedentList"></ul></div>
+      <section class="magazine-section split-section">
+        <h2>증거자료 정리법</h2>
+        <div class="split-layout">
+          <article class="story-card story-card-feature">
+            <a href="/evidence-guide">
+              <span class="story-image"><img src="/og.png" alt="고소장 증거자료 정리 화면" /></span>
+              <span class="story-kicker">증거정리</span>
+              <h3>증거는 번호, 날짜, 설명을 붙이면 훨씬 강해집니다</h3>
+              <p>대화 캡처, 계좌이체내역, 녹음, 사진, 진단서가 범죄사실의 어느 부분을 뒷받침하는지 연결합니다.</p>
+            </a>
+          </article>
+          <div class="mini-grid">
+            <article class="story-card"><a href="/evidence-guide"><span class="topic-thumb topic-green">대화</span><h3>상대방 표시와 앞뒤 흐름까지 캡처</h3></a></article>
+            <article class="story-card"><a href="/evidence-guide"><span class="topic-thumb topic-blue">송금</span><h3>날짜, 금액, 받는 사람을 함께 보관</h3></a></article>
+            <article class="story-card"><a href="/evidence-guide"><span class="topic-thumb topic-red">사진</span><h3>촬영일, 장소, 보여주는 내용을 기록</h3></a></article>
+            <article class="story-card"><a href="/evidence-guide"><span class="topic-thumb topic-gold">CCTV</span><h3>보관 기간 전 장소와 시간을 빠르게 확인</h3></a></article>
+          </div>
         </div>
+      </section>
+
+      <section class="magazine-section split-section">
+        <h2>제출절차 안내</h2>
+        <div class="split-layout">
+          <article class="story-card story-card-feature">
+            <a href="/filing-process">
+              <span class="story-image"><img src="/store/thumbnail-1932x828.png" alt="고소장 제출 절차 안내" /></span>
+              <span class="story-kicker">제출절차</span>
+              <h3>초안을 만든 뒤에는 접수기관과 증거 사본을 확인하세요</h3>
+              <p>방문 제출, 우편 제출, 접수증 확인, 조사 연락 준비까지 제출 전후 흐름을 정리했습니다.</p>
+            </a>
+          </article>
+          <div class="mini-grid">
+            <article class="story-card"><a href="/filing-process"><span class="topic-thumb topic-blue">준비</span><h3>신분증, 고소장, 증거 사본</h3></a></article>
+            <article class="story-card"><a href="/filing-process"><span class="topic-thumb topic-green">접수</span><h3>사건번호와 접수기관 기록</h3></a></article>
+            <article class="story-card"><a href="/filing-process"><span class="topic-thumb topic-gold">조사</span><h3>날짜순 사건표와 증거 위치 확인</h3></a></article>
+            <article class="story-card"><a href="/filing-process"><span class="topic-thumb topic-red">추가</span><h3>새 증거는 확보일과 출처를 함께 제출</h3></a></article>
+          </div>
+        </div>
+      </section>
+
+      <section class="magazine-section">
+        <h2>예시·체크리스트</h2>
+        <div class="four-card-grid">
+          <article class="story-card"><a href="/examples"><span class="topic-thumb topic-blue">예문</span><h3>고소취지 공통 문장</h3><p>처벌을 원한다는 뜻을 짧고 분명하게 쓰는 예시를 확인합니다.</p></a></article>
+          <article class="story-card"><a href="/examples"><span class="topic-thumb topic-green">불상</span><h3>상대방 이름을 모를 때 쓰는 법</h3><p>성명불상이어도 계정, 전화번호, 계좌번호 같은 단서를 적을 수 있습니다.</p></a></article>
+          <article class="story-card"><a href="/checklist"><span class="topic-thumb topic-gold">서명</span><h3>제출 직전 빠지는 날짜와 서명</h3><p>고소장 마지막 날짜, 이름, 서명 또는 날인을 직접 확인합니다.</p></a></article>
+          <article class="story-card"><a href="/privacy"><span class="topic-thumb topic-red">안전</span><h3>주민번호와 사진 자료 보관 원칙</h3><p>민감정보를 최소화하고 브라우저 임시저장 범위를 확인합니다.</p></a></article>
+        </div>
+      </section>
+
+      <section class="source-band" aria-label="공식 참고자료">
+        <h2>공식 참고자료</h2>
+        <a href="https://www.spo.go.kr/site/seoul/01/10101030200002018120505.jsp" target="_blank" rel="noreferrer">검찰 사건절차</a>
+        <a href="https://minwon24.police.go.kr/cvlcpt/cvlcptTmpltGdList.do" target="_blank" rel="noreferrer">경찰 민원서식</a>
+        <a href="https://www.law.go.kr/LSW/precSc.do" target="_blank" rel="noreferrer">국가법령정보센터</a>
+        <a href="/write">고소장 작성하기</a>
       </section>
     </main>
 
-    <footer class="app-footer">
-      <span>저장 버튼은 이 브라우저에만 보관합니다. 서버에는 별도 저장하지 않습니다.</span>
-      <span><a href="/guide">작성법</a> · <a href="/glossary">용어설명</a> · <a href="/checklist">체크리스트</a> · <a href="/examples">예시</a> · <a href="/evidence-guide">증거정리</a> · <a href="/filing-process">제출절차</a> · <a href="/about">서비스 소개</a> · <a href="/privacy">개인정보 안내</a> · <a href="/terms">이용약관</a> · <a href="https://www.law.go.kr/precSc.do" target="_blank" rel="noreferrer">판례 검색</a></span>
+    <footer class="magazine-footer">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <div class="brand-mark" aria-hidden="true">ㄱ</div>
+          <strong>고소장 도우미</strong>
+        </div>
+        <nav aria-label="하단 메뉴">
+          <a href="/guide">작성법</a>
+          <a href="/examples">예시</a>
+          <a href="/evidence-guide">증거정리</a>
+          <a href="/filing-process">제출절차</a>
+          <a href="/checklist">체크리스트</a>
+          <a href="/about">서비스 소개</a>
+          <a href="/privacy">개인정보 안내</a>
+          <a href="/terms">이용약관</a>
+        </nav>
+        <p>고소장 도우미는 문서 초안 작성을 돕는 정보 서비스입니다. 법률 자문을 대신하지 않으며, 실제 제출 전 사실관계와 증거자료를 직접 확인해야 합니다.</p>
+        <small>Copyright © 2026 고소장 도우미. All rights reserved.</small>
+      </div>
     </footer>
 
     <script>
       (() => {
-        const dateInput = document.querySelector('[name="incidentDateInput"]');
-        const hiddenDate = document.querySelector('[name="incidentDate"]');
-        if (!dateInput || !hiddenDate) return;
-
-        function formatIncidentDate(value) {
-          const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
-          if (!match) return "";
-          const [, year, month, day, hour, minute] = match;
-          let text = `${year}년 ${Number(month)}월 ${Number(day)}일 ${Number(hour)}시`;
-          if (minute !== "00") text += ` ${Number(minute)}분`;
-          return `${text}경`;
-        }
-
-        function syncIncidentDate() {
-          hiddenDate.value = formatIncidentDate(dateInput.value);
-        }
-
-        dateInput.addEventListener("input", syncIncidentDate);
-        dateInput.addEventListener("change", syncIncidentDate);
-        syncIncidentDate();
+        const toggle = document.querySelector("#mobileMenuToggle");
+        const menu = document.querySelector("#topMenu");
+        if (!toggle || !menu) return;
+        toggle.addEventListener("click", () => {
+          const open = menu.classList.toggle("is-open");
+          toggle.setAttribute("aria-expanded", String(open));
+        });
       })();
     </script>
-    <script type="module" src="/app.js?v=security-performance-fix-20260704"></script>
-    <script type="module" src="/photo-attachments.js?v=security-performance-fix-20260704"></script>
-    <script src="/draft-consistency.js?v=security-performance-fix-20260704"></script>
     <script src="/pwa.js?v=pwa-ready-20260718"></script>
   </body>
 </html>

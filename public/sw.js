@@ -1,8 +1,10 @@
-const CACHE_NAME = "gosojang-helper-v20260807";
+const CACHE_NAME = "gosojang-helper-v20260829";
 const APP_SHELL = [
   "/",
   "/index.html",
+  "/write.html",
   "/offline.html",
+  "/styles.css?v=magazine-20260829",
   "/styles.css?v=trust-20260807",
   "/info.css?v=trust-20260807",
   "/app.js?v=security-performance-fix-20260704",

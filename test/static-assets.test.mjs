@@ -68,6 +68,7 @@ test("AdSense, robots, sitemap, and 404 files are valid", async () => {
 test("indexable pages use canonical URLs and provide useful original text", async () => {
   const pages = {
     "index.html": "https://seeyou.kr/",
+    "write.html": "https://seeyou.kr/write",
     "guide.html": "https://seeyou.kr/guide",
     "examples.html": "https://seeyou.kr/examples",
     "checklist.html": "https://seeyou.kr/checklist",

@@ -34,7 +34,7 @@
     {
       "name": "고소장 작성",
       "short_name": "작성",
-      "url": "/#write",
+      "url": "/write",
       "description": "질문에 답하면서 고소장 초안을 작성합니다."
     },
     {
